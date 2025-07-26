@@ -256,7 +256,7 @@
                         </div>
                       </div>
                       <div class="skill-item padd-15">
-                        <h5>Node.js</h5>
+                        <h5>Node.js + Express.js</h5>
                         <div class="progress">
                           <div class="progress-in" style="width: 90%"></div>
                         </div>
@@ -652,10 +652,11 @@
                 the form is not possible
               </h4>
             </div>
+
             <!-- Contact Form -->
             <div class="row">
               <div class="contact-form padd-15">
-                <form action="/form-handler.php" method="post">
+                <form action="https://form.taxi/s/naft6cj2" method="POST">
                   <div class="row">
                     <div class="form-item col-6 padd-15">
                       <div class="form-group">
@@ -664,6 +665,7 @@
                           class="form-control"
                           name="name"
                           placeholder="Name"
+                          required
                         />
                       </div>
                     </div>
@@ -674,6 +676,7 @@
                           class="form-control"
                           name="email"
                           placeholder="Email"
+                          required
                         />
                       </div>
                     </div>
@@ -697,12 +700,22 @@
                           class="form-control"
                           name="message"
                           style="resize: vertical; height: 140px"
-                          id=""
                           placeholder="Message"
+                          required
                         ></textarea>
                       </div>
                     </div>
                   </div>
+                  <!-- Honeypot to prevent spam bots -->
+                  <input type="text" name="_gotcha" style="display: none" />
+
+                  <!-- 🔁 Redirect after successful submit -->
+                  <input
+                    type="hidden"
+                    name="_redirect"
+                    value="http://localhost:8000/thank-you.html"
+                  />
+
                   <div class="row">
                     <div class="form-item col-12 padd-15">
                       <button type="submit" class="btn">Send Message</button>
