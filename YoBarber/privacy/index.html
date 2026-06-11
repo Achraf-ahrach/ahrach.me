@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy — YoBarber</title>
+    <meta
+      name="description"
+      content="Privacy Policy for the YoBarber mobile application. Learn how we collect, use, and protect your personal data."
+    />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="../../img/icon.png" />
+    <link rel="apple-touch-icon" href="../../img/icon.png" />
+
+    <!-- Fonts -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap"
+    />
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+    />
+
+    <style>
+      /* ── Reset & Base ─────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --bg-primary: #0a0a0f;
+        --bg-card: #12121a;
+        --bg-card-hover: #1a1a26;
+        --border: rgba(255, 255, 255, 0.06);
+        --text-primary: #f0f0f5;
+        --text-secondary: #a0a0b8;
+        --text-muted: #6b6b80;
+        --accent: #ec1839;
+        --accent-glow: rgba(236, 24, 57, 0.15);
+        --gradient-accent: linear-gradient(135deg, #ec1839 0%, #ff6b6b 100%);
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: "Inter", "Poppins", sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        line-height: 1.7;
+        font-size: 16px;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      a {
+        color: var(--accent);
+        text-decoration: none;
+        transition: opacity 0.2s ease;
+      }
+      a:hover {
+        opacity: 0.8;
+      }
+
+      ::selection {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      /* ── Ambient Glow Background ──────────────────────── */
+      .bg-glow {
+        position: fixed;
+        top: -30%;
+        left: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+        animation: floatGlow 12s ease-in-out infinite alternate;
+      }
+      .bg-glow-2 {
+        position: fixed;
+        bottom: -20%;
+        right: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(
+          circle,
+          rgba(236, 24, 57, 0.06) 0%,
+          transparent 70%
+        );
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+        animation: floatGlow 16s ease-in-out infinite alternate-reverse;
+      }
+
+      @keyframes floatGlow {
+        0% {
+          transform: translate(0, 0) scale(1);
+        }
+        100% {
+          transform: translate(40px, 30px) scale(1.1);
+        }
+      }
+
+      /* ── Header / Nav Bar ────────────────────────────── */
+      .privacy-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(10, 10, 15, 0.75);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .header-inner {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 18px 28px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .header-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+        font-size: 15px;
+        color: var(--text-primary);
+      }
+
+      .header-brand .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex-shrink: 0;
+      }
+
+      .header-back {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        transition: color 0.2s ease;
+      }
+      .header-back:hover {
+        color: var(--text-primary);
+        opacity: 1;
+      }
+      .header-back i {
+        font-size: 12px;
+      }
+
+      /* ── Main Content ────────────────────────────────── */
+      .privacy-wrapper {
+        position: relative;
+        z-index: 1;
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 60px 28px 100px;
+      }
+
+      /* ── Hero ────────────────────────────────────────── */
+      .privacy-hero {
+        text-align: center;
+        margin-bottom: 64px;
+        animation: fadeUp 0.6s ease-out both;
+      }
+
+      .privacy-hero .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 16px;
+        border-radius: 100px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-glow);
+        border: 1px solid rgba(236, 24, 57, 0.2);
+        margin-bottom: 24px;
+      }
+
+      .privacy-hero h1 {
+        font-family: "Poppins", sans-serif;
+        font-size: clamp(32px, 5vw, 48px);
+        font-weight: 700;
+        line-height: 1.15;
+        margin-bottom: 16px;
+        background: linear-gradient(135deg, #ffffff 0%, #b0b0c8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .privacy-hero .subtitle {
+        font-size: 16px;
+        color: var(--text-secondary);
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      .privacy-hero .effective-date {
+        margin-top: 20px;
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      /* ── Policy Sections ─────────────────────────────── */
+      .policy-section {
+        margin-bottom: 48px;
+        animation: fadeUp 0.6s ease-out both;
+      }
+
+      .policy-section:nth-child(2) { animation-delay: 0.08s; }
+      .policy-section:nth-child(3) { animation-delay: 0.12s; }
+      .policy-section:nth-child(4) { animation-delay: 0.16s; }
+      .policy-section:nth-child(5) { animation-delay: 0.20s; }
+      .policy-section:nth-child(6) { animation-delay: 0.24s; }
+      .policy-section:nth-child(7) { animation-delay: 0.28s; }
+      .policy-section:nth-child(8) { animation-delay: 0.32s; }
+      .policy-section:nth-child(9) { animation-delay: 0.36s; }
+      .policy-section:nth-child(10) { animation-delay: 0.40s; }
+      .policy-section:nth-child(11) { animation-delay: 0.44s; }
+
+      .policy-section .section-number {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: 0.06em;
+        margin-bottom: 8px;
+      }
+
+      .policy-section h2 {
+        font-family: "Poppins", sans-serif;
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .policy-section p {
+        font-size: 15px;
+        color: var(--text-secondary);
+        margin-bottom: 14px;
+        line-height: 1.8;
+      }
+
+      .policy-section ul {
+        list-style: none;
+        padding: 0;
+        margin: 12px 0 16px;
+      }
+
+      .policy-section ul li {
+        position: relative;
+        padding-left: 24px;
+        margin-bottom: 10px;
+        font-size: 15px;
+        color: var(--text-secondary);
+        line-height: 1.7;
+      }
+
+      .policy-section ul li::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 10px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+
+      .policy-section strong {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+
+      /* ── Highlight Card ──────────────────────────────── */
+      .highlight-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px 28px;
+        margin: 20px 0;
+        transition: border-color 0.3s ease;
+      }
+      .highlight-card:hover {
+        border-color: rgba(236, 24, 57, 0.2);
+      }
+
+      .highlight-card p {
+        margin-bottom: 0;
+      }
+
+      /* ── Footer ──────────────────────────────────────── */
+      .privacy-footer {
+        border-top: 1px solid var(--border);
+        padding-top: 40px;
+        margin-top: 64px;
+        text-align: center;
+        animation: fadeUp 0.6s ease-out 0.5s both;
+      }
+
+      .privacy-footer p {
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+
+      .privacy-footer a {
+        font-weight: 500;
+      }
+
+      .footer-links {
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+      }
+
+      .footer-links a {
+        font-size: 13px;
+        color: var(--text-muted);
+        transition: color 0.2s ease;
+      }
+      .footer-links a:hover {
+        color: var(--text-primary);
+        opacity: 1;
+      }
+
+      /* ── Animations ──────────────────────────────────── */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ── Responsive ──────────────────────────────────── */
+      @media (max-width: 600px) {
+        .privacy-wrapper {
+          padding: 40px 20px 80px;
+        }
+
+        .header-inner {
+          padding: 14px 20px;
+        }
+
+        .policy-section h2 {
+          font-size: 19px;
+        }
+
+        .policy-section p,
+        .policy-section ul li {
+          font-size: 14px;
+        }
+
+        .highlight-card {
+          padding: 20px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Ambient Glow -->
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+
+    <!-- Header -->
+    <header class="privacy-header">
+      <div class="header-inner">
+        <div class="header-brand">
+          <span class="dot"></span>
+          YoBarber
+        </div>
+        <a href="https://ahrach.me" class="header-back">
+          <i class="fas fa-arrow-left"></i>
+          Back to site
+        </a>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="privacy-wrapper">
+      <!-- Hero -->
+      <div class="privacy-hero">
+        <div class="badge">
+          <i class="fas fa-shield-alt"></i>
+          Legal
+        </div>
+        <h1>Privacy Policy</h1>
+        <p class="subtitle">
+          Your privacy matters. Here's how YoBarber collects, uses, and protects
+          your personal information.
+        </p>
+        <p class="effective-date">Effective Date: June 11, 2025</p>
+      </div>
+
+      <!-- 1. Introduction -->
+      <div class="policy-section">
+        <span class="section-number">01</span>
+        <h2>Introduction</h2>
+        <p>
+          Welcome to <strong>YoBarber</strong> ("we," "us," or "our"). YoBarber
+          is a mobile application designed to streamline barbershop booking and
+          queue management. This Privacy Policy explains how we collect, use,
+          disclose, and safeguard your information when you use our mobile
+          application.
+        </p>
+        <p>
+          By using YoBarber, you agree to the collection and use of information
+          in accordance with this policy. If you do not agree with the terms of
+          this Privacy Policy, please do not access or use the application.
+        </p>
+      </div>
+
+      <!-- 2. Information We Collect -->
+      <div class="policy-section">
+        <span class="section-number">02</span>
+        <h2>Information We Collect</h2>
+        <p>
+          We collect only the minimum information necessary to provide and
+          improve our services:
+        </p>
+
+        <div class="highlight-card">
+          <p><strong>Authentication Data</strong></p>
+          <ul>
+            <li>Full name</li>
+            <li>Email address</li>
+            <li>Phone number</li>
+          </ul>
+          <p>
+            This information is collected during account registration and is
+            required to authenticate your identity and manage your account.
+          </p>
+        </div>
+
+        <div class="highlight-card">
+          <p><strong>Profile Pictures</strong></p>
+          <p>
+            Users may voluntarily upload a profile picture for account
+            customization. This is entirely optional and can be removed at any
+            time through your account settings.
+          </p>
+        </div>
+      </div>
+
+      <!-- 3. How We Use Your Information -->
+      <div class="policy-section">
+        <span class="section-number">03</span>
+        <h2>How We Use Your Information</h2>
+        <p>
+          Your personal data is used <strong>strictly</strong> for the following
+          purposes:
+        </p>
+        <ul>
+          <li>
+            <strong>Core App Functionality</strong> — Enabling you to browse
+            barbershops, join queues, and manage bookings.
+          </li>
+          <li>
+            <strong>Account Management</strong> — Creating and maintaining your
+            user account, authenticating logins, and personalizing your
+            experience.
+          </li>
+          <li>
+            <strong>Booking &amp; Queue Services</strong> — Processing your
+            appointments, managing real-time queue positions, and sending
+            relevant notifications.
+          </li>
+          <li>
+            <strong>Communication</strong> — Sending service-related
+            notifications such as booking confirmations, queue updates, and
+            important account alerts.
+          </li>
+        </ul>
+        <p>
+          We do <strong>not</strong> sell, rent, or trade your personal
+          information to third parties for marketing or advertising purposes.
+        </p>
+      </div>
+
+      <!-- 4. Data Storage & Security -->
+      <div class="policy-section">
+        <span class="section-number">04</span>
+        <h2>Data Storage &amp; Security</h2>
+        <p>
+          We take the security of your data seriously. All personal information
+          is stored securely using industry-standard practices:
+        </p>
+        <ul>
+          <li>
+            <strong>Encryption in Transit</strong> — All data transmitted
+            between your device and our servers is encrypted using TLS/SSL
+            protocols.
+          </li>
+          <li>
+            <strong>Encryption at Rest</strong> — Stored data is encrypted using
+            AES-256 encryption standards.
+          </li>
+          <li>
+            <strong>Access Controls</strong> — Strict access controls ensure
+            that only authorized personnel can access user data, and only when
+            necessary for service operation.
+          </li>
+          <li>
+            <strong>Regular Audits</strong> — We regularly review and update our
+            security measures to protect against unauthorized access,
+            alteration, disclosure, or destruction of your personal information.
+          </li>
+        </ul>
+      </div>
+
+      <!-- 5. Data Retention -->
+      <div class="policy-section">
+        <span class="section-number">05</span>
+        <h2>Data Retention</h2>
+        <p>
+          We retain your personal information only for as long as your account
+          is active or as needed to provide you with our services. If you choose
+          to delete your account, all associated personal data will be
+          permanently removed from our systems within 30 days, except where we
+          are required by law to retain certain information.
+        </p>
+      </div>
+
+      <!-- 6. Your Rights -->
+      <div class="policy-section">
+        <span class="section-number">06</span>
+        <h2>Your Rights</h2>
+        <p>You have the right to:</p>
+        <ul>
+          <li>
+            <strong>Access</strong> your personal data and request a copy of the
+            information we hold about you.
+          </li>
+          <li>
+            <strong>Update</strong> or correct any inaccurate personal
+            information directly through the app.
+          </li>
+          <li>
+            <strong>Delete</strong> your account and all associated data at any
+            time by contacting us or using the in-app account deletion feature.
+          </li>
+          <li>
+            <strong>Withdraw consent</strong> for data processing where
+            applicable, without affecting the lawfulness of processing conducted
+            prior to withdrawal.
+          </li>
+        </ul>
+        <p>
+          To exercise any of these rights, please contact us at the email
+          address provided below.
+        </p>
+      </div>
+
+      <!-- 7. Third-Party Services -->
+      <div class="policy-section">
+        <span class="section-number">07</span>
+        <h2>Third-Party Services</h2>
+        <p>
+          YoBarber may use third-party services for authentication, analytics,
+          or push notifications. These services may collect information used to
+          identify you in accordance with their own privacy policies. We
+          encourage you to review the privacy policies of any third-party
+          services we integrate with.
+        </p>
+      </div>
+
+      <!-- 8. Children's Privacy -->
+      <div class="policy-section">
+        <span class="section-number">08</span>
+        <h2>Children's Privacy</h2>
+        <p>
+          YoBarber does not knowingly collect personal information from children
+          under the age of 13. If we become aware that a child under 13 has
+          provided us with personal data, we will take steps to delete such
+          information from our servers immediately. If you are a parent or
+          guardian and believe your child has provided us with personal
+          information, please contact us.
+        </p>
+      </div>
+
+      <!-- 9. Changes to This Policy -->
+      <div class="policy-section">
+        <span class="section-number">09</span>
+        <h2>Changes to This Policy</h2>
+        <p>
+          We may update this Privacy Policy from time to time. Any changes will
+          be posted on this page with a revised "Effective Date." We encourage
+          you to review this Privacy Policy periodically for any updates. Your
+          continued use of YoBarber after any modifications indicates your
+          acceptance of the updated Privacy Policy.
+        </p>
+      </div>
+
+      <!-- 10. Contact Us -->
+      <div class="policy-section">
+        <span class="section-number">10</span>
+        <h2>Contact Us</h2>
+        <p>
+          If you have any questions, concerns, or requests regarding this
+          Privacy Policy or our data practices, please contact us:
+        </p>
+        <div class="highlight-card">
+          <ul>
+            <li>
+              <strong>Developer Website:</strong>
+              <a href="https://ahrach.me" target="_blank" rel="noopener"
+                >https://ahrach.me</a
+              >
+            </li>
+            <li>
+              <strong>Email:</strong>
+              <a href="mailto:achrafahrach44@gmail.com"
+                >achrafahrach44@gmail.com</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="privacy-footer">
+        <p>
+          &copy; 2026 YoBarber. All rights reserved.
+        </p>
+        <p>
+          Built by
+          <a href="https://ahrach.me" target="_blank" rel="noopener"
+            >Achraf Ahrach</a
+          >
+        </p>
+        <div class="footer-links">
+          <a href="https://ahrach.me">Home</a>
+          <a href="mailto:achrafahrach44@gmail.com">Contact</a>
+          <a
+            href="https://github.com/Achraf-ahrach"
+            target="_blank"
+            rel="noopener"
+            >GitHub</a
+          >
+        </div>
+      </footer>
+    </main>
+  </body>
+</html>
