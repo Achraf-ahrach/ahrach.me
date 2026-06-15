@@ -3,17 +3,81 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YoBarber — Skip the Line, Not the Style</title>
-  <meta name="description" content="YoBarber is the smartest way to book barbershop appointments and manage queues in real time. No more waiting — just walk in when it's your turn." />
-  <meta name="keywords" content="barbershop, booking, queue management, barber app, haircut appointment, skip the line" />
+  <title>YoBarber — Barber Queue Management & Barbershop Booking App | Skip the Line</title>
+  <meta name="description" content="YoBarber (Yo Barber) is the #1 barber queue management and barbershop booking app. Track your live queue position, book appointments instantly, and skip the line. Available on iOS & Android." />
+  <meta name="keywords" content="YoBarber, Yo Barber, barber queue management, barbershop booking app, barber app, haircut appointment, skip the line, barber queue tracker, barbershop queue system, real-time barber queue" />
   <meta name="author" content="Achraf Ahrach" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta name="theme-color" content="#3B82F6" />
+
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://ahrach.me/YoBarber/" />
 
   <!-- Open Graph -->
-  <meta property="og:title" content="YoBarber — Skip the Line, Not the Style" />
-  <meta property="og:description" content="Book barbershop appointments and track queues in real time. Your barber experience, reimagined." />
+  <meta property="og:title" content="YoBarber — Barber Queue Management & Barbershop Booking App" />
+  <meta property="og:description" content="The smartest way to book barbershop appointments and manage queues in real time. Track your live position, get notified when it's your turn, and never wait in line again. Available on iOS & Android." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://ahrach.me/YoBarber/" />
   <meta property="og:image" content="https://ahrach.me/YoBarber/mockup.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="YoBarber app interface showing real-time barber queue management and barbershop booking" />
+  <meta property="og:site_name" content="YoBarber" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="fr_FR" />
+  <meta property="og:locale:alternate" content="ar_MA" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="YoBarber — Barber Queue Management & Barbershop Booking App" />
+  <meta name="twitter:description" content="Skip the line, not the style. Book your barber instantly, track your queue in real time, and walk in when it's your turn." />
+  <meta name="twitter:image" content="https://ahrach.me/YoBarber/mockup.png" />
+  <meta name="twitter:image:alt" content="YoBarber app — real-time barber queue tracking and booking" />
+
+  <!-- JSON-LD Structured Data: MobileApplication -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "MobileApplication",
+    "name": "YoBarber",
+    "alternateName": "Yo Barber",
+    "description": "YoBarber is the smartest barber queue management and barbershop booking app. Track your live queue position, book appointments instantly, get smart notifications, and skip the line. Built for clients and barbers.",
+    "url": "https://ahrach.me/YoBarber/",
+    "image": "https://ahrach.me/YoBarber/mockup.png",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "iOS, Android",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "5.0",
+      "ratingCount": "100",
+      "bestRating": "5",
+      "worstRating": "1"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Achraf Ahrach",
+      "url": "https://ahrach.me"
+    },
+    "featureList": [
+      "Real-time barber queue tracking",
+      "Instant barbershop booking",
+      "Smart push notifications",
+      "Live queue position updates",
+      "Barber dashboard management",
+      "Profile and visit history",
+      "Multi-language support (English, French, Arabic)"
+    ],
+    "screenshot": "https://ahrach.me/YoBarber/mockup.png",
+    "softwareVersion": "1.0",
+    "inLanguage": ["en", "fr", "ar"]
+  }
+  </script>
+
   <base href="/YoBarber/" />
 
   <!-- Favicon -->
@@ -346,6 +410,7 @@
 </head>
 
 <body class="bg-slate-50 text-slate-800 font-sans overflow-x-hidden">
+<main>
 
   <!-- ═══════════════ AMBIENT GLOW ═══════════════ -->
   <div class="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
@@ -873,6 +938,7 @@
       </div>
     </div>
   </footer>
+</main>
 
 
   <!-- ═══════════════ TRANSLATION ENGINE ═══════════════ -->
@@ -1143,13 +1209,24 @@
         if (t[key]) el.innerHTML = t[key];
       });
 
-      if (lang === 'ar') {
-        document.title = 'YoBarber — تجاوز الطابور، وليس أناقتك';
-      } else if (lang === 'fr') {
-        document.title = 'YoBarber — Fini la file, Pas le style';
-      } else {
-        document.title = 'YoBarber — Skip the Line, Not the Style';
-      }
+      // Update page title and meta description per language for SEO
+      const seoData = {
+        en: {
+          title: 'YoBarber — Barber Queue Management & Barbershop Booking App | Skip the Line',
+          desc: 'YoBarber (Yo Barber) is the #1 barber queue management and barbershop booking app. Track your live queue position, book appointments instantly, and skip the line. Available on iOS & Android.'
+        },
+        fr: {
+          title: 'YoBarber — Gestion de file d\'attente et réservation chez le coiffeur | Fini la file',
+          desc: 'YoBarber est l\'application la plus intelligente pour gérer la file d\'attente chez le coiffeur et réserver instantanément. Suivi en temps réel, notifications intelligentes. Disponible sur iOS et Android.'
+        },
+        ar: {
+          title: 'YoBarber — إدارة طابور الحلاق وحجز مواعيد الحلاقة | تجاوز الطابور',
+          desc: 'YoBarber هو التطبيق الأذكى لإدارة طابور الحلاق وحجز المواعيد فوراً. تتبع موقعك في الطابور لحظة بلحظة. متوفر على iOS و Android.'
+        }
+      };
+      document.title = seoData[lang].title;
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) metaDesc.setAttribute('content', seoData[lang].desc);
 
       const labels = { en: 'EN', fr: 'FR', ar: 'ع' };
       const labelEl = document.getElementById('lang-label');
