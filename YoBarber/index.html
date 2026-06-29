@@ -1,6 +1,53 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" class="scroll-smooth">
 <head>
+  <!-- Username-Based QR Routing Script -->
+  <script>
+    (function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let barberUsername = urlParams.get('barber');
+
+      if (!barberUsername) {
+        let path = window.location.pathname;
+        if (path.startsWith('/YoBarber')) {
+          path = path.slice('/YoBarber'.length);
+        }
+        if (path.startsWith('/')) {
+          path = path.slice(1);
+        }
+        const segment = path.split('/')[0].split('?')[0].trim();
+        if (segment && segment !== 'index.html' && segment !== 'privacy' && segment !== 'privacy/') {
+          barberUsername = segment;
+        }
+      }
+
+      if (barberUsername) {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+        const isAndroid = /Android/i.test(userAgent);
+
+        if (isIOS || isAndroid) {
+          const appUri = 'yobarber://barber?barber=' + encodeURIComponent(barberUsername);
+          const storeUrl = 'https://play.google.com/store/apps/details?id=com.yobarber.app.v2';
+
+          window.location.href = appUri;
+
+          const redirectTimer = setTimeout(function() {
+            window.location.href = storeUrl;
+          }, 2000);
+
+          window.addEventListener('blur', function() {
+            clearTimeout(redirectTimer);
+          });
+          window.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+              clearTimeout(redirectTimer);
+            }
+          });
+        }
+      }
+    })();
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YoBarber — Barber Queue Management & Barbershop Booking App | Skip the Line</title>
