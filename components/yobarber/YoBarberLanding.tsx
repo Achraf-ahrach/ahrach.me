@@ -199,9 +199,10 @@ export default function YoBarberLanding() {
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-2">
-                  <Image src="/yobarber/client1.jpeg" alt="" width={32} height={32} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
-                  <Image src="/yobarber/client2.png" alt="" width={32} height={32} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
-                  <Image src="/yobarber/client3.png" alt="" width={32} height={32} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
+                  <Image src="/yobarber/client1.jpeg" alt="Client 1" width={32} height={32} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
+                  <Image src="/yobarber/client2.png" alt="Client 2" width={32} height={32} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
+                  <Image src="/yobarber/client3.png" alt="Client 3" width={32} height={32} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
+                  <Image src="/yobarber/client4.png" alt="Client 4" width={32} height={32} className="w-8 h-8 rounded-full border-2 border-white object-cover" />
                 </div>
                 <div className="flex items-center gap-1">
                   {[1, 2, 3, 4, 5].map((i) => (
