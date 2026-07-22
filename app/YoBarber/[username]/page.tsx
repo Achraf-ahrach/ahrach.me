@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Image from "next/image";
 
 const PLAY_STORE_URL =
-  "https://play.google.com/store/apps/details?id=com.yobarber.app";
+  "https://play.google.com/store/apps/details?id=com.yobarber.app.v2";
 
 export default function BarberDeepLinkPage() {
   const params = useParams();

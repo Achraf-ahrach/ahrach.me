@@ -24,7 +24,7 @@ const Globe = () => (
 );
 
 const PLAY_STORE_URL =
-  "https://play.google.com/store/apps/details?id=com.yobarber.app";
+  "https://play.google.com/store/apps/details?id=com.yobarber.app.v2";
 
 export default function YoBarberLanding() {
   const [lang, setLang] = useState<LangKey>("en");
