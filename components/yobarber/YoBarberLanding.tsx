@@ -115,16 +115,20 @@ export default function YoBarberLanding() {
               <span className="text-lg font-bold text-slate-800 tracking-tight">YoBarber</span>
             </div>
 
-            {/* Desktop nav */}
-            <div className="hidden md:flex items-center gap-8">
-              <button onClick={() => scrollToSection("features")} className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">{t.nav_features}</button>
-              <button onClick={() => scrollToSection("how")} className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">{t.nav_how}</button>
-              <button onClick={() => scrollToSection("download")} className="cta-primary text-white px-5 py-2 rounded-xl text-sm font-semibold">{t.nav_download}</button>
-              {/* Language switcher */}
+            {/* Right Nav Controls */}
+            <div className="flex items-center gap-3 sm:gap-4">
+              {/* Desktop Nav Links */}
+              <div className="hidden md:flex items-center gap-8">
+                <button onClick={() => scrollToSection("features")} className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">{t.nav_features}</button>
+                <button onClick={() => scrollToSection("how")} className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">{t.nav_how}</button>
+                <button onClick={() => scrollToSection("download")} className="cta-primary text-white px-5 py-2 rounded-xl text-sm font-semibold">{t.nav_download}</button>
+              </div>
+
+              {/* Language switcher — ALWAYS visible on Mobile and Desktop */}
               <div className="lang-switcher" ref={langRef}>
-                <button onClick={() => setLangOpen(!langOpen)} className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">
+                <button onClick={() => setLangOpen(!langOpen)} className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-slate-600 bg-slate-100/80 hover:bg-slate-200/80 md:bg-transparent md:hover:bg-transparent px-2.5 py-1.5 md:p-0 rounded-lg transition-all">
                   <Globe />
-                  {LANG_LABELS[lang]}
+                  <span className="font-semibold">{LANG_LABELS[lang]}</span>
                   <ChevronDown />
                 </button>
                 <div className={`lang-dropdown ${langOpen ? "open" : ""}`}>
@@ -135,12 +139,12 @@ export default function YoBarberLanding() {
                   ))}
                 </div>
               </div>
-            </div>
 
-            {/* Mobile menu toggle */}
-            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden text-slate-600">
-              {mobileMenuOpen ? <X /> : <Menu />}
-            </button>
+              {/* Mobile menu toggle */}
+              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden text-slate-600 p-1">
+                {mobileMenuOpen ? <X /> : <Menu />}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -151,21 +155,6 @@ export default function YoBarberLanding() {
               <button onClick={() => scrollToSection("features")} className="block w-full text-left text-sm font-medium text-slate-600 py-2">{t.nav_features}</button>
               <button onClick={() => scrollToSection("how")} className="block w-full text-left text-sm font-medium text-slate-600 py-2">{t.nav_how}</button>
               <button onClick={() => scrollToSection("download")} className="block w-full text-left cta-primary text-white text-center px-5 py-2.5 rounded-xl text-sm font-semibold">{t.nav_download}</button>
-              {/* Mobile language */}
-              <div className="pt-2 border-t border-slate-100">
-                <button onClick={() => setMobileLangOpen(!mobileLangOpen)} className="flex items-center gap-2 text-sm font-medium text-slate-500 py-2">
-                  <Globe /> {LANG_LABELS[lang]} <ChevronDown />
-                </button>
-                {mobileLangOpen && (
-                  <div className="pl-6 space-y-1">
-                    {(Object.keys(LANG_LABELS) as LangKey[]).map((l) => (
-                      <button key={l} onClick={() => changeLang(l)} className={`block text-sm py-1.5 ${lang === l ? "text-blue-600 font-semibold" : "text-slate-500"}`}>
-                        {l === "en" ? "🇬🇧 English" : l === "fr" ? "🇫🇷 Français" : "🇲🇦 العربية"}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         )}
