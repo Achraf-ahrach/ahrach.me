@@ -1030,10 +1030,24 @@ h3.my-profession {
   }
 }
 
+/* ── Global Overflow Fix ───────────────────────── */
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 /* ═══════════════════════════════════════════════
    YOBARBER STYLES (scoped via .yobarber-page)
    Migrated from YoBarber/index.html <style>
    ═══════════════════════════════════════════════ */
+
+.yobarber-page {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
 
 .yobarber-page ::selection {
   background: #3b82f6;
@@ -1369,6 +1383,10 @@ html[dir="rtl"] .lang-dropdown button {
    ═══════════════════════════════════════════════ */
 
 .privacy-page {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   --bg-primary: #0a0a0f;
   --bg-card: #12121a;
   --bg-card-hover: #1a1a26;
