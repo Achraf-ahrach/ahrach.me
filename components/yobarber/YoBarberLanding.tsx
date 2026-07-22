@@ -215,7 +215,7 @@ export default function YoBarberLanding() {
             {/* Right — Hero mockup */}
             <div className="flex justify-center lg:justify-end">
               <div className="mockup-float mockup-shadow">
-                <Image src="/yobarber/hero.png" alt="YoBarber app preview" width={420} height={600} className="w-[320px] sm:w-[380px] lg:w-[420px] h-auto" priority />
+                <Image src="/yobarber/hero.png" alt="YoBarber app preview" width={350} height={500} className="w-[270px] sm:w-[320px] lg:w-[350px] h-auto" priority />
               </div>
             </div>
           </div>
