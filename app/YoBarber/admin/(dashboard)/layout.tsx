@@ -35,7 +35,7 @@ export default async function DashboardLayout({
     user.user_metadata?.picture ||
     "";
 
-  if (!profile || !["admin", "super_admin"].includes(profile.role)) {
+  if (!profile || profile.role !== "admin") {
     return (
       <div className="admin-access-denied">
         <div className="admin-access-denied-card">

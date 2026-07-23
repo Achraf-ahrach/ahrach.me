@@ -20,10 +20,17 @@ import {
   Inbox,
   MapPin,
   ExternalLink,
+  Clock,
 } from "lucide-react";
 
 interface UserManagementPanelProps {
   role: "barber" | "client";
+}
+
+interface SuspendModalState {
+  user: ProfileRow;
+  preset: "3" | "7" | "30" | "custom";
+  customDays: string;
 }
 
 export default function UserManagementPanel({ role }: UserManagementPanelProps) {
@@ -38,6 +45,57 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const [suspendModal, setSuspendModal] = useState<SuspendModalState | null>(null);
+
+  const getEffectiveDays = (modal: SuspendModalState): number => {
+    if (modal.preset === "custom") {
+      const parsed = parseInt(modal.customDays, 10);
+      return isNaN(parsed) || parsed <= 0 ? 1 : parsed;
+    }
+    return parseInt(modal.preset, 10);
+  };
+
+  const getCalculatedDate = (modal: SuspendModalState): Date => {
+    const days = getEffectiveDays(modal);
+    const now = new Date();
+    now.setDate(now.getDate() + days);
+    return now;
+  };
+
+  const handleConfirmSuspend = async () => {
+    if (!suspendModal) return;
+
+    const { user } = suspendModal;
+    const days = getEffectiveDays(suspendModal);
+    const untilDate = getCalculatedDate(suspendModal);
+    const suspendedUntil = untilDate.toISOString();
+
+    setActionLoading(user.id);
+    const result = await updateUserStatus(user.id, "suspended", suspendedUntil);
+    setActionLoading(null);
+    setSuspendModal(null);
+
+    if (result.success) {
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? { ...u, status: "suspended", suspended_until: suspendedUntil }
+            : u
+        )
+      );
+      const formattedDate = untilDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+      showToast(
+        `${user.full_name} suspended for ${days} day${days > 1 ? "s" : ""} (until ${formattedDate})`,
+        "success"
+      );
+    } else {
+      showToast(result.error || "Failed to suspend user", "error");
+    }
+  };
 
   const pageSize = 20;
   const totalPages = Math.ceil(total / pageSize);
@@ -79,7 +137,7 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
 
     if (result.success) {
       setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u))
+        prev.map((u) => (u.id === user.id ? { ...u, status: newStatus, suspended_until: null } : u))
       );
       const actionLabel =
         newStatus === "active"
@@ -249,13 +307,23 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
                         </td>
                       )}
                     <td>
-                      <span
-                        className={`admin-status-badge ${getStatusBadge(
-                          user.status
-                        )}`}
-                      >
-                        {user.status}
-                      </span>
+                      <div className="admin-status-cell-wrapper">
+                        <span
+                          className={`admin-status-badge ${getStatusBadge(
+                            user.status
+                          )}`}
+                        >
+                          {user.status}
+                        </span>
+                        {user.status === "suspended" && user.suspended_until && (
+                          <span
+                            className="admin-suspended-until-tag"
+                            title={`Until ${new Date(user.suspended_until).toLocaleString()}`}
+                          >
+                            Until {new Date(user.suspended_until).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td>
                       <span className="admin-date">
@@ -271,7 +339,7 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
                               handleStatusChange(user, "active")
                             }
                             disabled={actionLoading === user.id}
-                            title="Reactivate"
+                            title="Reactivate User"
                           >
                             {actionLoading === user.id ? (
                               <Loader2 size={13} className="admin-spinner" />
@@ -284,10 +352,14 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
                           <button
                             className="admin-action-sm amber"
                             onClick={() =>
-                              handleStatusChange(user, "suspended")
+                              setSuspendModal({
+                                user,
+                                preset: "3",
+                                customDays: "3",
+                              })
                             }
                             disabled={actionLoading === user.id}
-                            title="Suspend"
+                            title="Suspend User"
                           >
                             <ShieldOff size={13} />
                           </button>
@@ -338,6 +410,104 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
             </div>
           )}
         </>
+      )}
+
+      {/* Suspend Duration Modal */}
+      {suspendModal && (
+        <div className="admin-modal-overlay">
+          <div className="admin-modal admin-suspend-modal">
+            <div className="admin-modal-icon amber">
+              <Clock size={28} />
+            </div>
+            <h3>Suspend {suspendModal.user.full_name}?</h3>
+            <p>
+              Select suspension duration. The user will be unable to access services during this period.
+            </p>
+
+            {/* Presets */}
+            <div className="admin-suspend-options">
+              {[
+                { key: "3", label: "3 Days" },
+                { key: "7", label: "7 Days" },
+                { key: "30", label: "30 Days" },
+                { key: "custom", label: "Custom" },
+              ].map((opt) => (
+                <button
+                  key={opt.key}
+                  type="button"
+                  className={`admin-suspend-chip ${
+                    suspendModal.preset === opt.key ? "active" : ""
+                  }`}
+                  onClick={() =>
+                    setSuspendModal({
+                      ...suspendModal,
+                      preset: opt.key as any,
+                    })
+                  }
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Input */}
+            {suspendModal.preset === "custom" && (
+              <div className="admin-custom-days-group">
+                <label className="admin-custom-label">Custom Duration (Days):</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="365"
+                  value={suspendModal.customDays}
+                  onChange={(e) =>
+                    setSuspendModal({
+                      ...suspendModal,
+                      customDays: e.target.value,
+                    })
+                  }
+                  className="admin-custom-days-input"
+                  placeholder="e.g. 14"
+                />
+              </div>
+            )}
+
+            {/* Date Preview */}
+            <div className="admin-suspend-preview">
+              <span className="admin-preview-label">Suspended Until:</span>
+              <span className="admin-preview-date">
+                {getCalculatedDate(suspendModal).toLocaleDateString("en-US", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
+
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-modal-btn suspend-confirm"
+                onClick={handleConfirmSuspend}
+                disabled={actionLoading === suspendModal.user.id}
+              >
+                {actionLoading === suspendModal.user.id ? (
+                  <Loader2 size={16} className="admin-spinner" />
+                ) : (
+                  <ShieldOff size={16} />
+                )}
+                Confirm Suspension
+              </button>
+              <button
+                type="button"
+                className="admin-modal-btn cancel"
+                onClick={() => setSuspendModal(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast */}

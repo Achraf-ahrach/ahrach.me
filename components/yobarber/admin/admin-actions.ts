@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/supabase-server";
+import { createAdminClient } from "@/lib/supabase/supabase-admin";
 
 /* ── Types ─────────────────────────────────────── */
 export interface DashboardMetrics {
@@ -20,12 +21,49 @@ export interface ProfileRow {
   address?: string | null;
   role: string;
   status: string;
+  suspended_until?: string | null;
   created_at: string;
+}
+
+/* ── Clean Expired Suspensions Safely ───────────── */
+async function cleanExpiredSuspensions(supabase: any) {
+  try {
+    const { data: suspendedUsers, error } = await supabase
+      .from("profiles")
+      .select("id, suspended_until")
+      .eq("status", "suspended");
+
+    if (error || !suspendedUsers || suspendedUsers.length === 0) return;
+
+    const nowMs = Date.now();
+    const expiredIds: string[] = [];
+
+    for (const u of suspendedUsers) {
+      if (u.suspended_until) {
+        const untilMs = new Date(u.suspended_until).getTime();
+        if (!isNaN(untilMs) && untilMs <= nowMs) {
+          expiredIds.push(u.id);
+        }
+      }
+    }
+
+    if (expiredIds.length > 0) {
+      await supabase
+        .from("profiles")
+        .update({ status: "active", suspended_until: null })
+        .in("id", expiredIds);
+    }
+  } catch (err) {
+    console.error("[cleanExpiredSuspensions] error:", err);
+  }
 }
 
 /* ── Dashboard Metrics ─────────────────────────── */
 export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
   const supabase = await createClient();
+
+  // Auto-unsuspend any expired suspensions safely
+  await cleanExpiredSuspensions(supabase);
 
   const [activeBarbers, pendingBarbers, totalClients, totalAppointments] =
     await Promise.all([
@@ -62,7 +100,7 @@ export async function fetchPendingBarbers(): Promise<ProfileRow[]> {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, phone, location_lat, location_lng, address, role, status, created_at")
+    .select("id, full_name, phone, location_lat, location_lng, address, role, status, suspended_until, created_at")
     .eq("role", "barber")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
@@ -80,13 +118,18 @@ export async function fetchUsers(
   statusFilter: string = "all"
 ): Promise<{ data: ProfileRow[]; total: number }> {
   const supabase = await createClient();
+
+  // 1. Clean expired suspensions safely
+  await cleanExpiredSuspensions(supabase);
+
+  // 2. Query users
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
   let query = supabase
     .from("profiles")
     .select(
-      "id, full_name, phone, location_lat, location_lng, address, role, status, created_at",
+      "id, full_name, phone, location_lat, location_lng, address, role, status, suspended_until, created_at",
       {
         count: "exact",
       }
@@ -154,15 +197,40 @@ export async function rejectBarber(
 /* ── Update User Status (suspend/ban/reactivate) ─ */
 export async function updateUserStatus(
   userId: string,
-  newStatus: "active" | "suspended" | "banned"
+  newStatus: "active" | "suspended" | "banned",
+  suspendedUntil?: string | null
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createAdminClient();
 
-  const { error } = await supabase
+  const updateData: Record<string, any> = { status: newStatus };
+  if (newStatus === "suspended") {
+    updateData.suspended_until = suspendedUntil || null;
+  } else {
+    updateData.suspended_until = null;
+  }
+
+  console.log("[updateUserStatus] Target userId:", userId, "Payload:", updateData);
+
+  const { data, error } = await supabase
     .from("profiles")
-    .update({ status: newStatus })
-    .eq("id", userId);
+    .update(updateData)
+    .eq("id", userId)
+    .select("id, status, suspended_until");
 
-  if (error) return { success: false, error: error.message };
+  if (error) {
+    console.error("[updateUserStatus] Supabase error:", error);
+    return { success: false, error: `Supabase Error: ${error.message} (${error.code || "RLS"})` };
+  }
+
+  if (!data || data.length === 0) {
+    console.error("[updateUserStatus] 0 rows updated for userId:", userId);
+    return {
+      success: false,
+      error:
+        "UPDATE failed: 0 rows affected. Supabase RLS policy may be blocking non-owner profile updates.",
+    };
+  }
+
+  console.log("[updateUserStatus] Successfully updated in Supabase:", data[0]);
   return { success: true };
 }

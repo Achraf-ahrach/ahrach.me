@@ -2730,9 +2730,119 @@ html[dir="rtl"] .lang-dropdown button {
   color: var(--admin-text);
 }
 
+.admin-modal-btn.suspend-confirm {
+  color: white;
+  background: #d97706;
+  border-color: #b45309;
+}
+.admin-modal-btn.suspend-confirm:hover {
+  background: #b45309;
+}
+
 .admin-modal-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ── Suspended Date Sub-tag ──────────────────────── */
+.admin-status-cell-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.admin-suspended-until-tag {
+  font-size: 11px;
+  font-weight: 500;
+  color: #f59e0b;
+  opacity: 0.85;
+  font-family: monospace;
+}
+
+/* ── Suspend Duration Modal ───────────────────────── */
+.admin-suspend-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.admin-suspend-chip {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-suspend-chip:hover {
+  color: var(--admin-text);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.admin-suspend-chip.active {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+}
+
+.admin-custom-days-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.admin-custom-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+}
+
+.admin-custom-days-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13.5px;
+  color: var(--admin-text);
+  background: var(--admin-surface-2);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.admin-custom-days-input:focus {
+  border-color: #f59e0b;
+}
+
+.admin-suspend-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  margin-bottom: 20px;
+}
+
+.admin-preview-label {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+}
+
+.admin-preview-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f59e0b;
 }
 
 /* ═══════════════════════════════════════
