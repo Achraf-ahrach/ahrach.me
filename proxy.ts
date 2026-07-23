@@ -4,10 +4,23 @@ import type { NextRequest } from "next/server";
 export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
-  // 1. Normalize lowercase /yobarber... to /YoBarber... for Linux (Vercel) case-sensitivity
+  // Ignore static assets, images, and internal Next.js requests
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    /\.(png|jpe?g|svg|webp|gif|ico|css|js)$/i.test(pathname)
+  ) {
+    return NextResponse.next();
+  }
+
+  // 1. Normalize lowercase /yobarber... page routes to /YoBarber... for Linux (Vercel) case-sensitivity
   if (pathname.startsWith("/yobarber")) {
     const correctedPath = "/YoBarber" + pathname.slice(9);
-    const targetUrl = new URL(correctedPath + searchParams.toString() ? `?${searchParams.toString()}` : "", request.url);
+    const queryString = searchParams.toString();
+    const targetUrl = new URL(
+      correctedPath + (queryString ? `?${queryString}` : ""),
+      request.url
+    );
     return NextResponse.redirect(targetUrl);
   }
 
