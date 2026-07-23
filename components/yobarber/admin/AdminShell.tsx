@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/supabase-client";
@@ -13,6 +13,8 @@ import {
   Menu,
   X,
   Shield,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 export type AdminTab = "overview" | "pending" | "barbers" | "clients";
@@ -58,7 +60,21 @@ export default function AdminShell({
   onTabChange,
 }: AdminShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const router = useRouter();
+
+  useEffect(() => {
+    const saved = localStorage.getItem("yobarber_admin_theme") as "dark" | "light" | null;
+    if (saved) {
+      setTheme(saved);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("yobarber_admin_theme", nextTheme);
+  };
 
   const handleLogout = async () => {
     const supabase = createClient();
@@ -67,7 +83,7 @@ export default function AdminShell({
   };
 
   return (
-    <div className="admin-dashboard">
+    <div className={`admin-dashboard ${theme === "light" ? "light-mode" : ""}`}>
       {/* ── Mobile Overlay ── */}
       {sidebarOpen && (
         <div
@@ -161,6 +177,13 @@ export default function AdminShell({
             {NAV_ITEMS.find((i) => i.key === activeTab)?.label}
           </h1>
           <div className="admin-header-right">
+            <button
+              className="admin-theme-toggle"
+              onClick={toggleTheme}
+              title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            >
+              {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
             <span className="admin-header-badge">
               <Shield size={14} />
               Admin Panel
