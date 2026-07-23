@@ -348,7 +348,7 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
                             )}
                           </button>
                         )}
-                        {user.status !== "suspended" && (
+                        {role !== "barber" && user.status !== "suspended" && (
                           <button
                             className="admin-action-sm amber"
                             onClick={() =>
