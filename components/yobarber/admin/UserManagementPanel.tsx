@@ -18,6 +18,8 @@ import {
   ChevronRight,
   Users,
   Inbox,
+  MapPin,
+  ExternalLink,
 } from "lucide-react";
 
 interface UserManagementPanelProps {
@@ -163,38 +165,66 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
                 <tr>
                   <th>Name</th>
                   <th>Contact</th>
-                  {role === "barber" && <th>Shop</th>}
+                  {role === "barber" && <th>SHOP</th>}
                   <th>Status</th>
                   <th>Joined</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
-                  <tr key={user.id}>
-                    <td>
-                      <div className="admin-user-cell">
-                        <div className="admin-user-avatar">
-                          {user.full_name?.charAt(0).toUpperCase() || "?"}
-                        </div>
-                        <span className="admin-user-name">
-                          {user.full_name}
-                        </span>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="admin-contact-cell">
-                        <span>{user.email}</span>
-                        <span className="admin-phone">{user.phone}</span>
-                      </div>
-                    </td>
-                    {role === "barber" && (
+                {users.map((user) => {
+                  const mapUrl =
+                    user.location_lat && user.location_lng
+                      ? `https://www.google.com/maps?q=${user.location_lat},${user.location_lng}`
+                      : user.address
+                      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                          user.address
+                        )}`
+                      : null;
+
+                  return (
+                    <tr key={user.id}>
                       <td>
-                        <span className="admin-shop-name">
-                          {user.shop_name || "—"}
-                        </span>
+                        <div className="admin-user-cell">
+                          <div className="admin-user-avatar">
+                            {user.full_name?.charAt(0).toUpperCase() || "?"}
+                          </div>
+                          <span className="admin-user-name">
+                            {user.full_name}
+                          </span>
+                        </div>
                       </td>
-                    )}
+                      <td>
+                        <div className="admin-contact-cell">
+                          <span>{user.email}</span>
+                          <span className="admin-phone">{user.phone}</span>
+                        </div>
+                      </td>
+                      {role === "barber" && (
+                        <td>
+                          {mapUrl ? (
+                            <a
+                              href={mapUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="admin-location-btn"
+                              title="Open Google Maps Location"
+                            >
+                              <MapPin size={13} />
+                              <span>
+                                {user.address
+                                  ? user.address.length > 22
+                                    ? user.address.slice(0, 22) + "…"
+                                    : user.address
+                                  : "View Location"}
+                              </span>
+                              <ExternalLink size={11} className="admin-location-ext" />
+                            </a>
+                          ) : (
+                            <span className="admin-no-location">—</span>
+                          )}
+                        </td>
+                      )}
                     <td>
                       <span
                         className={`admin-status-badge ${getStatusBadge(
@@ -254,8 +284,9 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
                       </div>
                     </td>
                   </tr>
-                ))}
-              </tbody>
+                );
+              })}
+            </tbody>
             </table>
           </div>
 

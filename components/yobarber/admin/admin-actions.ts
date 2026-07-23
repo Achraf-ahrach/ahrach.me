@@ -15,7 +15,9 @@ export interface ProfileRow {
   full_name: string;
   email?: string;
   phone: string;
-  shop_name: string | null;
+  location_lat?: number | null;
+  location_lng?: number | null;
+  address?: string | null;
   role: string;
   status: string;
   created_at: string;
@@ -60,7 +62,7 @@ export async function fetchPendingBarbers(): Promise<ProfileRow[]> {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, phone, role, status, created_at")
+    .select("id, full_name, phone, location_lat, location_lng, address, role, status, created_at")
     .eq("role", "barber")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
@@ -82,7 +84,7 @@ export async function fetchUsers(
 
   let query = supabase
     .from("profiles")
-    .select("id, full_name, phone, role, status, created_at", {
+    .select("id, full_name, phone, location_lat, location_lng, address, role, status, created_at", {
       count: "exact",
     })
     .eq("role", role)

@@ -17,6 +17,8 @@ import {
   Ban,
   RefreshCw,
   Inbox,
+  MapPin,
+  ExternalLink,
 } from "lucide-react";
 
 type RejectMode = "reject" | "delete";
@@ -146,35 +148,63 @@ export default function PendingApprovalsPanel() {
               <tr>
                 <th>Barber</th>
                 <th>Contact</th>
-                <th>Shop Name</th>
+                <th>SHOP</th>
                 <th>Registered</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {barbers.map((barber) => (
-                <tr key={barber.id}>
-                  <td>
-                    <div className="admin-user-cell">
-                      <div className="admin-user-avatar">
-                        {barber.full_name?.charAt(0).toUpperCase() || "?"}
+              {barbers.map((barber) => {
+                const mapUrl =
+                  barber.location_lat && barber.location_lng
+                    ? `https://www.google.com/maps?q=${barber.location_lat},${barber.location_lng}`
+                    : barber.address
+                    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        barber.address
+                      )}`
+                    : null;
+
+                return (
+                  <tr key={barber.id}>
+                    <td>
+                      <div className="admin-user-cell">
+                        <div className="admin-user-avatar">
+                          {barber.full_name?.charAt(0).toUpperCase() || "?"}
+                        </div>
+                        <span className="admin-user-name">
+                          {barber.full_name}
+                        </span>
                       </div>
-                      <span className="admin-user-name">
-                        {barber.full_name}
-                      </span>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="admin-contact-cell">
-                      <span>{barber.email}</span>
-                      <span className="admin-phone">{barber.phone}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="admin-shop-name">
-                      {barber.shop_name || "—"}
-                    </span>
-                  </td>
+                    </td>
+                    <td>
+                      <div className="admin-contact-cell">
+                        <span>{barber.email}</span>
+                        <span className="admin-phone">{barber.phone}</span>
+                      </div>
+                    </td>
+                    <td>
+                      {mapUrl ? (
+                        <a
+                          href={mapUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="admin-location-btn"
+                          title="Open Google Maps Location"
+                        >
+                          <MapPin size={13} />
+                          <span>
+                            {barber.address
+                              ? barber.address.length > 22
+                                ? barber.address.slice(0, 22) + "…"
+                                : barber.address
+                              : "View Location"}
+                          </span>
+                          <ExternalLink size={11} className="admin-location-ext" />
+                        </a>
+                      ) : (
+                        <span className="admin-no-location">—</span>
+                      )}
+                    </td>
                   <td>
                     <span className="admin-date">
                       {formatDate(barber.created_at)}
@@ -213,8 +243,9 @@ export default function PendingApprovalsPanel() {
                     </div>
                   </td>
                 </tr>
-              ))}
-            </tbody>
+              );
+            })}
+          </tbody>
           </table>
         </div>
       )}
