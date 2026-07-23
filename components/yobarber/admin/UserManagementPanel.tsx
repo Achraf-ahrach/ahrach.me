@@ -204,7 +204,7 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
           {[
             { key: "all", label: "All" },
             { key: "active", label: "Active" },
-            { key: "suspended", label: "Suspended" },
+            ...(role !== "barber" ? [{ key: "suspended", label: "Suspended" }] : []),
             { key: "banned", label: "Banned" },
           ].map((tab) => (
             <button
