@@ -40,6 +40,8 @@ export default function PendingApprovalsPanel() {
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialog | null>(
     null
   );
+  const [profileModal, setProfileModal] = useState<ProfileRow | null>(null);
+  const [failedAvatars, setFailedAvatars] = useState<Set<string>>(new Set());
 
   const loadBarbers = useCallback(async () => {
     try {
@@ -168,9 +170,22 @@ export default function PendingApprovalsPanel() {
                   <tr key={barber.id}>
                     <td>
                       <div className="admin-user-cell">
-                        <div className="admin-user-avatar">
-                          {barber.full_name?.charAt(0).toUpperCase() || "?"}
-                        </div>
+                        {barber.avatar_url && !failedAvatars.has(barber.id) ? (
+                          <img
+                            src={barber.avatar_url}
+                            alt=""
+                            className="admin-user-avatar admin-user-avatar-img"
+                            onClick={() => setProfileModal(barber)}
+                            onError={() => setFailedAvatars(prev => new Set(prev).add(barber.id))}
+                          />
+                        ) : (
+                          <div
+                            className="admin-user-avatar"
+                            onClick={() => setProfileModal(barber)}
+                          >
+                            {barber.full_name?.charAt(0).toUpperCase() || "?"}
+                          </div>
+                        )}
                         <span className="admin-user-name">
                           {barber.full_name}
                         </span>
@@ -288,6 +303,55 @@ export default function PendingApprovalsPanel() {
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Lightbox Modal */}
+      {profileModal && (
+        <div
+          className="admin-modal-overlay admin-lightbox-overlay"
+          onClick={() => setProfileModal(null)}
+        >
+          <div
+            className="admin-lightbox"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="admin-lightbox-close"
+              onClick={() => setProfileModal(null)}
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="admin-lightbox-avatar-wrapper">
+              {profileModal.avatar_url && !failedAvatars.has(profileModal.id) ? (
+                <img
+                  src={profileModal.avatar_url}
+                  alt=""
+                  className="admin-lightbox-avatar"
+                  onError={() => setFailedAvatars(prev => new Set(prev).add(profileModal.id))}
+                />
+              ) : (
+                <div className="admin-lightbox-avatar admin-lightbox-avatar-initial">
+                  {profileModal.full_name?.charAt(0).toUpperCase() || "?"}
+                </div>
+              )}
+            </div>
+
+            <div className="admin-lightbox-info">
+              <h3 className="admin-lightbox-name">{profileModal.full_name}</h3>
+              <span className="admin-status-badge admin-badge-pending">
+                {profileModal.role}
+              </span>
+              {profileModal.phone && (
+                <p className="admin-lightbox-detail">📞 {profileModal.phone}</p>
+              )}
+              {profileModal.email && (
+                <p className="admin-lightbox-detail">✉️ {profileModal.email}</p>
+              )}
             </div>
           </div>
         </div>

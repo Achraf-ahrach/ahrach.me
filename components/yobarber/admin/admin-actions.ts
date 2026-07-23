@@ -16,6 +16,7 @@ export interface ProfileRow {
   full_name: string;
   email?: string;
   phone: string;
+  avatar_url?: string | null;
   location_lat?: number | null;
   location_lng?: number | null;
   address?: string | null;
@@ -100,7 +101,7 @@ export async function fetchPendingBarbers(): Promise<ProfileRow[]> {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, phone, location_lat, location_lng, address, role, status, suspended_until, created_at")
+    .select("id, full_name, phone, avatar_url, location_lat, location_lng, address, role, status, suspended_until, created_at")
     .eq("role", "barber")
     .eq("status", "pending")
     .order("created_at", { ascending: false });
@@ -129,7 +130,7 @@ export async function fetchUsers(
   let query = supabase
     .from("profiles")
     .select(
-      "id, full_name, phone, location_lat, location_lng, address, role, status, suspended_until, created_at",
+      "id, full_name, phone, avatar_url, location_lat, location_lng, address, role, status, suspended_until, created_at",
       {
         count: "exact",
       }
@@ -197,7 +198,7 @@ export async function rejectBarber(
 /* ── Update User Status (suspend/ban/reactivate) ─ */
 export async function updateUserStatus(
   userId: string,
-  newStatus: "active" | "suspended" | "banned",
+  newStatus: "active" | "suspended" | "banned" | "pending",
   suspendedUntil?: string | null
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createAdminClient();

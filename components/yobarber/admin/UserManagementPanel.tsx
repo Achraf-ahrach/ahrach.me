@@ -21,6 +21,8 @@ import {
   MapPin,
   ExternalLink,
   Clock,
+  RotateCcw,
+  X,
 } from "lucide-react";
 
 interface UserManagementPanelProps {
@@ -46,6 +48,8 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
     type: "success" | "error";
   } | null>(null);
   const [suspendModal, setSuspendModal] = useState<SuspendModalState | null>(null);
+  const [profileModal, setProfileModal] = useState<ProfileRow | null>(null);
+  const [failedAvatars, setFailedAvatars] = useState<Set<string>>(new Set());
 
   const getEffectiveDays = (modal: SuspendModalState): number => {
     if (modal.preset === "custom") {
@@ -129,7 +133,7 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
 
   const handleStatusChange = async (
     user: ProfileRow,
-    newStatus: "active" | "suspended" | "banned"
+    newStatus: "active" | "suspended" | "banned" | "pending"
   ) => {
     setActionLoading(user.id);
     const result = await updateUserStatus(user.id, newStatus);
@@ -144,6 +148,8 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
           ? "reactivated"
           : newStatus === "suspended"
           ? "suspended"
+          : newStatus === "pending"
+          ? "reverted to pending"
           : "banned";
       showToast(`${user.full_name} has been ${actionLabel}`, "success");
     } else {
@@ -204,6 +210,7 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
           {[
             { key: "all", label: "All" },
             { key: "active", label: "Active" },
+            ...(role === "barber" ? [{ key: "pending", label: "Pending" }] : []),
             ...(role !== "barber" ? [{ key: "suspended", label: "Suspended" }] : []),
             { key: "banned", label: "Banned" },
           ].map((tab) => (
@@ -267,9 +274,22 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
                     <tr key={user.id}>
                       <td>
                         <div className="admin-user-cell">
-                          <div className="admin-user-avatar">
-                            {user.full_name?.charAt(0).toUpperCase() || "?"}
-                          </div>
+                          {user.avatar_url && !failedAvatars.has(user.id) ? (
+                            <img
+                              src={user.avatar_url}
+                              alt=""
+                              className="admin-user-avatar admin-user-avatar-img"
+                              onClick={() => setProfileModal(user)}
+                              onError={() => setFailedAvatars(prev => new Set(prev).add(user.id))}
+                            />
+                          ) : (
+                            <div
+                              className="admin-user-avatar"
+                              onClick={() => setProfileModal(user)}
+                            >
+                              {user.full_name?.charAt(0).toUpperCase() || "?"}
+                            </div>
+                          )}
                           <span className="admin-user-name">
                             {user.full_name}
                           </span>
@@ -345,6 +365,22 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
                               <Loader2 size={13} className="admin-spinner" />
                             ) : (
                               <ShieldCheck size={13} />
+                            )}
+                          </button>
+                        )}
+                        {role === "barber" && user.status !== "pending" && (
+                          <button
+                            className="admin-action-sm blue"
+                            onClick={() =>
+                              handleStatusChange(user, "pending")
+                            }
+                            disabled={actionLoading === user.id}
+                            title="Revert to Pending"
+                          >
+                            {actionLoading === user.id ? (
+                              <Loader2 size={13} className="admin-spinner" />
+                            ) : (
+                              <RotateCcw size={13} />
                             )}
                           </button>
                         )}
@@ -505,6 +541,55 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile Lightbox Modal */}
+      {profileModal && (
+        <div
+          className="admin-modal-overlay admin-lightbox-overlay"
+          onClick={() => setProfileModal(null)}
+        >
+          <div
+            className="admin-lightbox"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="admin-lightbox-close"
+              onClick={() => setProfileModal(null)}
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="admin-lightbox-avatar-wrapper">
+              {profileModal.avatar_url && !failedAvatars.has(profileModal.id) ? (
+                <img
+                  src={profileModal.avatar_url}
+                  alt=""
+                  className="admin-lightbox-avatar"
+                  onError={() => setFailedAvatars(prev => new Set(prev).add(profileModal.id))}
+                />
+              ) : (
+                <div className="admin-lightbox-avatar admin-lightbox-avatar-initial">
+                  {profileModal.full_name?.charAt(0).toUpperCase() || "?"}
+                </div>
+              )}
+            </div>
+
+            <div className="admin-lightbox-info">
+              <h3 className="admin-lightbox-name">{profileModal.full_name}</h3>
+              <span className={`admin-status-badge ${getStatusBadge(profileModal.status)}`}>
+                {profileModal.role}
+              </span>
+              {profileModal.phone && (
+                <p className="admin-lightbox-detail">📞 {profileModal.phone}</p>
+              )}
+              {profileModal.email && (
+                <p className="admin-lightbox-detail">✉️ {profileModal.email}</p>
+              )}
             </div>
           </div>
         </div>
