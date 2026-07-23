@@ -2477,7 +2477,85 @@ html[dir="rtl"] .lang-dropdown button {
   background: var(--admin-surface-2);
 }
 
-/* ── Search Bar ────────────────────────────────── */
+/* ── Search Bar & Controls ───────────────────────── */
+.admin-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.admin-controls-row .admin-search-bar {
+  flex: 1;
+  min-width: 260px;
+  margin-bottom: 0;
+}
+
+.admin-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  padding: 4px;
+  border-radius: 12px;
+}
+
+.admin-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-filter-pill:hover {
+  color: var(--admin-text);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-filter-pill.active {
+  color: white;
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+}
+
+.admin-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--admin-text-dim);
+}
+
+.admin-pill-dot.active {
+  background: #22c55e;
+  box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
+}
+
+.admin-pill-dot.suspended {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6);
+}
+
+.admin-pill-dot.banned {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+}
+
+.admin-pill-dot.all {
+  background: #3b82f6;
+}
+
 .admin-search-bar {
   position: relative;
   margin-bottom: 18px;

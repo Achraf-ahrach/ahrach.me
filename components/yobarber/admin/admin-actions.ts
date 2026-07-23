@@ -71,12 +71,13 @@ export async function fetchPendingBarbers(): Promise<ProfileRow[]> {
   return (data as ProfileRow[]) ?? [];
 }
 
-/* ── Fetch Users (paginated, searchable) ───────── */
+/* ── Fetch Users (paginated, searchable, status filtered) ─ */
 export async function fetchUsers(
   role: "barber" | "client",
   search?: string,
   page: number = 1,
-  pageSize: number = 20
+  pageSize: number = 20,
+  statusFilter: string = "all"
 ): Promise<{ data: ProfileRow[]; total: number }> {
   const supabase = await createClient();
   const from = (page - 1) * pageSize;
@@ -84,17 +85,24 @@ export async function fetchUsers(
 
   let query = supabase
     .from("profiles")
-    .select("id, full_name, phone, location_lat, location_lng, address, role, status, created_at", {
-      count: "exact",
-    })
-    .eq("role", role)
-    .order("created_at", { ascending: false })
-    .range(from, to);
+    .select(
+      "id, full_name, phone, location_lat, location_lng, address, role, status, created_at",
+      {
+        count: "exact",
+      }
+    )
+    .eq("role", role);
+
+  if (statusFilter && statusFilter !== "all") {
+    query = query.eq("status", statusFilter);
+  }
 
   if (search && search.trim()) {
     const term = `%${search.trim()}%`;
     query = query.or(`full_name.ilike.${term},phone.ilike.${term}`);
   }
+
+  query = query.order("created_at", { ascending: false }).range(from, to);
 
   const { data, count, error } = await query;
 

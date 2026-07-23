@@ -31,6 +31,7 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{
@@ -44,7 +45,7 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
   const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
-      const result = await fetchUsers(role, search, page, pageSize);
+      const result = await fetchUsers(role, search, page, pageSize, statusFilter);
       setUsers(result.data);
       setTotal(result.total);
     } catch (err) {
@@ -52,16 +53,16 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
     } finally {
       setLoading(false);
     }
-  }, [role, search, page]);
+  }, [role, search, page, statusFilter]);
 
   useEffect(() => {
     loadUsers();
   }, [loadUsers]);
 
-  // Reset page when search changes
+  // Reset page when search or status filter changes
   useEffect(() => {
     setPage(1);
-  }, [search]);
+  }, [search, statusFilter]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -128,16 +129,38 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="admin-search-bar">
-        <Search size={18} className="admin-search-icon" />
-        <input
-          type="text"
-          placeholder={`Search ${roleLabel.toLowerCase()} by name, email, or phone…`}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="admin-search-input"
-        />
+      {/* Controls Row: Search Bar & Status Filter Pills */}
+      <div className="admin-controls-row">
+        <div className="admin-search-bar">
+          <Search size={18} className="admin-search-icon" />
+          <input
+            type="text"
+            placeholder={`Search ${roleLabel.toLowerCase()} by name, email, or phone…`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="admin-search-input"
+          />
+        </div>
+
+        <div className="admin-filter-group">
+          {[
+            { key: "all", label: "All" },
+            { key: "active", label: "Active" },
+            { key: "suspended", label: "Suspended" },
+            { key: "banned", label: "Banned" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              className={`admin-filter-pill ${
+                statusFilter === tab.key ? "active" : ""
+              }`}
+              onClick={() => setStatusFilter(tab.key)}
+            >
+              <span className={`admin-pill-dot ${tab.key}`} />
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Loading */}
