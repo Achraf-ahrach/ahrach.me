@@ -15,6 +15,16 @@ export default function BarberDeepLinkPage() {
   useEffect(() => {
     if (!username) return;
 
+    const lowerName = username.toLowerCase();
+    if (lowerName === "admin") {
+      window.location.replace("/YoBarber/admin");
+      return;
+    }
+    if (lowerName === "privacy") {
+      window.location.replace("/YoBarber/privacy");
+      return;
+    }
+
     const appSchemeUrl = `yobarber://barber?barber=${encodeURIComponent(username)}`;
     const userAgent = navigator.userAgent || navigator.vendor;
     const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
@@ -39,6 +49,10 @@ export default function BarberDeepLinkPage() {
       return () => clearTimeout(timer);
     }
   }, [username]);
+
+  if (username && ["admin", "privacy"].includes(username.toLowerCase())) {
+    return null;
+  }
 
   return (
     <div
