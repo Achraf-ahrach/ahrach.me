@@ -38,11 +38,19 @@ export default function YoBarberLanding() {
   const t = translations[lang];
   const isRTL = lang === "ar";
 
+  useEffect(() => {
+    const saved = localStorage.getItem("yobarber_lang") as LangKey;
+    if (saved && (saved === "en" || saved === "fr" || saved === "ar")) {
+      setLang(saved);
+    }
+  }, []);
+
   const changeLang = useCallback((l: LangKey) => {
     setLang(l);
     setLangOpen(false);
     setMobileLangOpen(false);
     setMobileMenuOpen(false);
+    localStorage.setItem("yobarber_lang", l);
   }, []);
 
   /* ── Scroll handler for navbar glass ─────── */
