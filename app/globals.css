@@ -2408,6 +2408,10 @@ html[dir="rtl"] .lang-dropdown button {
   font-weight: 700;
 }
 
+.admin-chart-completed-badge strong {
+  color: #10b981;
+}
+
 .admin-dashboard.light-mode .admin-chart-total-badge {
   background: #f1f5f9;
   border-color: #e2e8f0;
@@ -2416,6 +2420,10 @@ html[dir="rtl"] .lang-dropdown button {
 
 .admin-dashboard.light-mode .admin-chart-total-badge strong {
   color: #7c3aed;
+}
+
+.admin-dashboard.light-mode .admin-chart-completed-badge strong {
+  color: #059669;
 }
 
 /* ── Skeleton Shimmer / Pulse ───────────────────── */

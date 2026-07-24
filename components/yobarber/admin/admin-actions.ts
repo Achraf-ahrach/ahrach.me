@@ -61,7 +61,7 @@ async function cleanExpiredSuspensions(supabase: any) {
 
 /* ── Dashboard Metrics ─────────────────────────── */
 export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
-  const supabase = await createClient();
+  const supabase = await createAdminClient();
 
   // Auto-unsuspend any expired suspensions safely
   await cleanExpiredSuspensions(supabase);
@@ -84,7 +84,9 @@ export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
         .eq("role", "client"),
       supabase
         .from("appointments")
-        .select("id", { count: "exact", head: true }),
+        .select("id", { count: "exact", head: true })
+        .neq("status", "cancelled")
+        .neq("status", "no_show"),
     ]);
 
   return {
@@ -97,7 +99,7 @@ export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
 
 /* ── Fetch Pending Barbers ─────────────────────── */
 export async function fetchPendingBarbers(): Promise<ProfileRow[]> {
-  const supabase = await createClient();
+  const supabase = await createAdminClient();
 
   const { data, error } = await supabase
     .from("profiles")
@@ -118,7 +120,7 @@ export async function fetchUsers(
   pageSize: number = 20,
   statusFilter: string = "all"
 ): Promise<{ data: ProfileRow[]; total: number }> {
-  const supabase = await createClient();
+  const supabase = await createAdminClient();
 
   // 1. Clean expired suspensions safely
   await cleanExpiredSuspensions(supabase);
@@ -158,7 +160,7 @@ export async function fetchUsers(
 export async function approveBarber(
   barberId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createAdminClient();
 
   const { error } = await supabase
     .from("profiles")
@@ -174,7 +176,7 @@ export async function rejectBarber(
   barberId: string,
   action: "reject" | "delete"
 ): Promise<{ success: boolean; error?: string }> {
-  const supabase = await createClient();
+  const supabase = await createAdminClient();
 
   if (action === "delete") {
     const { error } = await supabase
@@ -244,7 +246,14 @@ export async function updateUserStatus(
 export interface TrendDataPoint {
   date: string;  // e.g. "Mon", "Tue"
   fullDate: string;
-  count: number;
+  count: number; // total tickets (machi cancelled, no_show)
+  completedCount: number; // tickets completed
+}
+
+export interface AppointmentsTrendResult {
+  points: TrendDataPoint[];
+  totalCount: number;
+  completedCount: number;
 }
 
 export interface TopBarber {
@@ -268,8 +277,8 @@ export type TimeRange = "7d" | "30d" | "12m";
 
 export async function fetchAppointmentsTrend(
   range: TimeRange = "7d"
-): Promise<TrendDataPoint[]> {
-  const supabase = await createClient();
+): Promise<AppointmentsTrendResult> {
+  const supabase = await createAdminClient();
   const points: TrendDataPoint[] = [];
   const now = new Date();
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -282,6 +291,38 @@ export async function fetchAppointmentsTrend(
     "July", "August", "September", "October", "November", "December"
   ];
 
+  let rangeStart = new Date(now);
+  if (range === "7d") {
+    rangeStart.setDate(now.getDate() - 6);
+    rangeStart.setHours(0, 0, 0, 0);
+  } else if (range === "30d") {
+    rangeStart.setDate(now.getDate() - 29);
+    rangeStart.setHours(0, 0, 0, 0);
+  } else if (range === "12m") {
+    rangeStart = new Date(now.getFullYear(), now.getMonth() - 11, 1, 0, 0, 0, 0);
+  }
+
+  const { data: appointments, error } = await supabase
+    .from("appointments")
+    .select("id, status, created_at")
+    .gte("created_at", rangeStart.toISOString());
+
+  if (error) {
+    console.error("[fetchAppointmentsTrend] error fetching appointments:", error);
+  }
+
+  const allApps = appointments ?? [];
+
+  // total = ga3 tickets li machi 'cancelled', 'no_show'
+  const validApps = allApps.filter(
+    (app) => app.status !== "cancelled" && app.status !== "no_show"
+  );
+  const totalCount = validApps.length;
+
+  // completed = tickets li completed
+  const completedApps = allApps.filter((app) => app.status === "completed");
+  const completedCount = completedApps.length;
+
   if (range === "7d") {
     for (let i = 6; i >= 0; i--) {
       const day = new Date(now);
@@ -291,20 +332,21 @@ export async function fetchAppointmentsTrend(
       const endOfDay = new Date(day);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const { count, error } = await supabase
-        .from("appointments")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", startOfDay.toISOString())
-        .lte("created_at", endOfDay.toISOString());
+      const dayTotal = validApps.filter((app) => {
+        const t = new Date(app.created_at).getTime();
+        return t >= startOfDay.getTime() && t <= endOfDay.getTime();
+      }).length;
 
-      if (error) {
-        console.error("[fetchAppointmentsTrend] error for day:", day, error);
-      }
+      const dayCompleted = completedApps.filter((app) => {
+        const t = new Date(app.created_at).getTime();
+        return t >= startOfDay.getTime() && t <= endOfDay.getTime();
+      }).length;
 
       points.push({
         date: dayNames[startOfDay.getDay()],
         fullDate: `${dayNames[startOfDay.getDay()]}, ${monthNames[startOfDay.getMonth()]} ${startOfDay.getDate()}, ${startOfDay.getFullYear()}`,
-        count: count ?? 0,
+        count: dayTotal,
+        completedCount: dayCompleted,
       });
     }
   } else if (range === "30d") {
@@ -316,20 +358,21 @@ export async function fetchAppointmentsTrend(
       const endOfDay = new Date(day);
       endOfDay.setHours(23, 59, 59, 999);
 
-      const { count, error } = await supabase
-        .from("appointments")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", startOfDay.toISOString())
-        .lte("created_at", endOfDay.toISOString());
+      const dayTotal = validApps.filter((app) => {
+        const t = new Date(app.created_at).getTime();
+        return t >= startOfDay.getTime() && t <= endOfDay.getTime();
+      }).length;
 
-      if (error) {
-        console.error("[fetchAppointmentsTrend] error for day:", day, error);
-      }
+      const dayCompleted = completedApps.filter((app) => {
+        const t = new Date(app.created_at).getTime();
+        return t >= startOfDay.getTime() && t <= endOfDay.getTime();
+      }).length;
 
       points.push({
         date: `${monthNames[startOfDay.getMonth()]} ${startOfDay.getDate()}`,
         fullDate: `${monthNames[startOfDay.getMonth()]} ${startOfDay.getDate()}, ${startOfDay.getFullYear()}`,
-        count: count ?? 0,
+        count: dayTotal,
+        completedCount: dayCompleted,
       });
     }
   } else if (range === "12m") {
@@ -337,30 +380,35 @@ export async function fetchAppointmentsTrend(
       const startOfMonth = new Date(now.getFullYear(), now.getMonth() - i, 1, 0, 0, 0, 0);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59, 999);
 
-      const { count, error } = await supabase
-        .from("appointments")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", startOfMonth.toISOString())
-        .lte("created_at", endOfMonth.toISOString());
+      const monthTotal = validApps.filter((app) => {
+        const t = new Date(app.created_at).getTime();
+        return t >= startOfMonth.getTime() && t <= endOfMonth.getTime();
+      }).length;
 
-      if (error) {
-        console.error("[fetchAppointmentsTrend] error for month:", startOfMonth, error);
-      }
+      const monthCompleted = completedApps.filter((app) => {
+        const t = new Date(app.created_at).getTime();
+        return t >= startOfMonth.getTime() && t <= endOfMonth.getTime();
+      }).length;
 
       points.push({
         date: monthNames[startOfMonth.getMonth()],
         fullDate: `${fullMonthNames[startOfMonth.getMonth()]} ${startOfMonth.getFullYear()}`,
-        count: count ?? 0,
+        count: monthTotal,
+        completedCount: monthCompleted,
       });
     }
   }
 
-  return points;
+  return {
+    points,
+    totalCount,
+    completedCount,
+  };
 }
 
 /* ── Top 5 Performing Barbers ─────────────────── */
 export async function fetchTopBarbers(): Promise<TopBarber[]> {
-  const supabase = await createClient();
+  const supabase = await createAdminClient();
 
   // 1. Get all active barbers
   const { data: barbers, error: barbersErr } = await supabase
@@ -411,7 +459,7 @@ export async function fetchTopBarbers(): Promise<TopBarber[]> {
 
 /* ── Recent Activity Feed (Last 8 Events) ─────── */
 export async function fetchRecentActivities(): Promise<ActivityEvent[]> {
-  const supabase = await createClient();
+  const supabase = await createAdminClient();
   const events: ActivityEvent[] = [];
 
   // 1. Recent appointments (bookings, completions, cancellations)

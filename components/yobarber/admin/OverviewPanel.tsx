@@ -98,13 +98,20 @@ function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   const dataPoint = payload[0]?.payload;
   const displayDate = dataPoint?.fullDate || label;
+  const total = payload[0].value ?? 0;
+  const completed = dataPoint?.completedCount ?? 0;
 
   return (
     <div className="admin-chart-tooltip">
       <span className="admin-chart-tooltip-label">{displayDate}</span>
-      <span className="admin-chart-tooltip-value">
-        {payload[0].value} appointment{payload[0].value !== 1 ? "s" : ""}
-      </span>
+      <div className="flex flex-col gap-0.5 mt-1">
+        <span className="admin-chart-tooltip-value">
+          Total: <strong>{total}</strong>
+        </span>
+        <span className="text-[11.5px] text-emerald-400 font-semibold">
+          Completed: <strong>{completed}</strong>
+        </span>
+      </div>
     </div>
   );
 }
@@ -167,6 +174,8 @@ export default function OverviewPanel() {
   const router = useRouter();
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [trend, setTrend] = useState<TrendDataPoint[]>([]);
+  const [totalPeriodAppointments, setTotalPeriodAppointments] = useState(0);
+  const [completedPeriodAppointments, setCompletedPeriodAppointments] = useState(0);
   const [topBarbers, setTopBarbers] = useState<TopBarber[]>([]);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
   const [pendingBarbers, setPendingBarbers] = useState<ProfileRow[]>([]);
@@ -182,7 +191,7 @@ export default function OverviewPanel() {
   const loadAll = useCallback(async () => {
     try {
       setLoading(true);
-      const [m, t, tb, act, pb] = await Promise.all([
+      const [m, trendRes, tb, act, pb] = await Promise.all([
         fetchDashboardMetrics(),
         fetchAppointmentsTrend("7d"),
         fetchTopBarbers(),
@@ -190,7 +199,9 @@ export default function OverviewPanel() {
         fetchPendingBarbers(),
       ]);
       setMetrics(m);
-      setTrend(t);
+      setTrend(trendRes.points);
+      setTotalPeriodAppointments(trendRes.totalCount);
+      setCompletedPeriodAppointments(trendRes.completedCount);
       setTopBarbers(tb);
       setActivities(act);
       setPendingBarbers(pb);
@@ -207,8 +218,10 @@ export default function OverviewPanel() {
     setTimeRange(newRange);
     setChartLoading(true);
     try {
-      const data = await fetchAppointmentsTrend(newRange);
-      setTrend(data);
+      const res = await fetchAppointmentsTrend(newRange);
+      setTrend(res.points);
+      setTotalPeriodAppointments(res.totalCount);
+      setCompletedPeriodAppointments(res.completedCount);
     } catch (err) {
       console.error("Failed to fetch trend for range:", newRange, err);
     } finally {
@@ -378,10 +391,6 @@ export default function OverviewPanel() {
   };
 
   const hasChartData = trend.some((d) => d.count > 0);
-  const totalPeriodAppointments = trend.reduce(
-    (sum, item) => sum + item.count,
-    0
-  );
 
   return (
     <div className="admin-overview">
@@ -421,11 +430,16 @@ export default function OverviewPanel() {
             <div className="admin-widget-header">
               <BarChart3 size={18} className="admin-widget-icon" />
               <div className="admin-widget-title-group">
-                <h3>Appointments & Queue Trend</h3>
+                <h3>Appointments</h3>
                 {!loading && (
-                  <span className="admin-chart-total-badge">
-                    Total: <strong>{totalPeriodAppointments}</strong>
-                  </span>
+                  <>
+                    <span className="admin-chart-total-badge">
+                      Total: <strong>{totalPeriodAppointments}</strong>
+                    </span>
+                    <span className="admin-chart-total-badge admin-chart-completed-badge">
+                      Completed: <strong>{completedPeriodAppointments}</strong>
+                    </span>
+                  </>
                 )}
               </div>
               <div className="admin-chart-filter-toggle">
