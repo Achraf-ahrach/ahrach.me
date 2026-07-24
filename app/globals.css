@@ -2342,25 +2342,619 @@ html[dir="rtl"] .lang-dropdown button {
   opacity: 0.4;
 }
 
-/* ── Overview Summary ──────────────────────────── */
-.admin-overview-summary {
+/* ═══════════════════════════════════════
+   OVERVIEW — 2-Column Grid & Widgets
+   ═══════════════════════════════════════ */
+
+.admin-overview-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.admin-overview-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Widget Shared ─────────────────────────────── */
+.admin-widget {
   padding: 22px;
-  border-radius: 14px;
+  border-radius: 16px;
   background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  transition: border-color 0.3s ease;
+}
+
+.admin-widget:hover {
+  border-color: var(--admin-border-hover);
+}
+
+.admin-widget-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.admin-widget-header h3 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--admin-text);
+  margin: 0;
+}
+
+.admin-widget-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.admin-chart-total-badge {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-2);
+  padding: 3px 9px;
+  border-radius: 8px;
   border: 1px solid var(--admin-border);
 }
 
-.admin-overview-summary h3 {
-  font-size: 15px;
+.admin-chart-total-badge strong {
+  color: var(--admin-violet);
   font-weight: 700;
-  color: var(--admin-text);
-  margin-bottom: 8px;
 }
 
-.admin-overview-summary p {
-  font-size: 14px;
+.admin-dashboard.light-mode .admin-chart-total-badge {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+.admin-dashboard.light-mode .admin-chart-total-badge strong {
+  color: #7c3aed;
+}
+
+.admin-widget-icon {
+  color: var(--admin-violet);
+  flex-shrink: 0;
+}
+
+.admin-widget-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--admin-violet);
+  letter-spacing: 0.02em;
+}
+
+/* ── Chart Filter Pills Toggle ─────────────────── */
+.admin-chart-filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--admin-surface-2);
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid var(--admin-border);
+}
+
+.admin-chart-filter-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
   color: var(--admin-text-muted);
-  line-height: 1.7;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-chart-filter-pill:hover:not(:disabled) {
+  color: var(--admin-text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-chart-filter-pill.active {
+  background: var(--admin-violet);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.35);
+}
+
+.admin-chart-filter-pill:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Light mode overrides */
+.admin-dashboard.light-mode .admin-chart-filter-toggle {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+}
+
+.admin-dashboard.light-mode .admin-chart-filter-pill:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.admin-dashboard.light-mode .admin-chart-filter-pill.active {
+  background: var(--admin-violet);
+  color: #ffffff;
+}
+
+.admin-widget-count {
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--admin-amber);
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+}
+
+/* ── Widget Empty State ────────────────────────── */
+.admin-widget-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: var(--admin-text-dim);
+  text-align: center;
+  gap: 8px;
+}
+
+.admin-widget-empty.compact {
+  padding: 24px 16px;
+}
+
+.admin-widget-empty p {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  margin: 0;
+}
+
+.admin-widget-empty span {
+  font-size: 12.5px;
+  color: var(--admin-text-dim);
+}
+
+/* ── Chart Container ───────────────────────────── */
+.admin-chart-container {
+  position: relative;
+  width: 100%;
+  min-height: 240px;
+}
+
+.admin-chart-loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 18, 31, 0.6);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  z-index: 10;
+}
+
+.admin-dashboard.light-mode .admin-chart-loading-overlay {
+  background: rgba(255, 255, 255, 0.65);
+}
+
+/* ── Chart Tooltip ─────────────────────────────── */
+.admin-chart-tooltip {
+  background: rgba(18, 18, 31, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.admin-chart-tooltip-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #8888a8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-chart-tooltip-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f0f0f8;
+}
+
+/* ── Top Barbers List ──────────────────────────── */
+.admin-top-barbers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-top-barber-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.admin-top-barber-item:hover {
+  background: var(--admin-surface-2);
+}
+
+.admin-top-barber-rank {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+  background: var(--admin-surface-3);
+  color: var(--admin-text-muted);
+}
+
+.admin-top-barber-rank.rank-1 {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.admin-top-barber-rank.rank-2 {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+
+.admin-top-barber-rank.rank-3 {
+  background: rgba(180, 83, 9, 0.12);
+  color: #d97706;
+}
+
+.admin-top-barber-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--admin-surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-top-barber-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-top-barber-initials {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--admin-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.admin-top-barber-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-top-barber-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--admin-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-top-barber-stats {
+  font-size: 12px;
+  color: var(--admin-text-dim);
+}
+
+.admin-top-barber-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--admin-amber);
+  flex-shrink: 0;
+}
+
+.admin-star-icon {
+  fill: var(--admin-amber);
+  color: var(--admin-amber);
+}
+
+.admin-no-rating {
+  font-size: 13px;
+  color: var(--admin-text-dim);
+  font-weight: 400;
+}
+
+/* ── Activity Feed ─────────────────────────────── */
+.admin-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-activity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.admin-activity-item:hover {
+  background: var(--admin-surface-2);
+}
+
+.admin-activity-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-activity-badge-blue {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+}
+
+.admin-activity-badge-green {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+}
+
+.admin-activity-badge-amber {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+}
+
+.admin-activity-badge-red {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+}
+
+.admin-activity-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-activity-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--admin-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-activity-desc {
+  font-size: 12px;
+  color: var(--admin-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-activity-time {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--admin-text-dim);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ── Pending Approvals Mini ────────────────────── */
+.admin-pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.admin-pending-mini {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.admin-pending-mini:hover {
+  background: var(--admin-surface-2);
+}
+
+.admin-pending-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--admin-surface-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--admin-text-dim);
+}
+
+.admin-pending-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-pending-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-pending-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--admin-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-pending-phone {
+  font-size: 12px;
+  color: var(--admin-text-dim);
+}
+
+.admin-pending-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.admin-mini-approve,
+.admin-mini-reject {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.admin-mini-approve {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+}
+
+.admin-mini-approve:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.25);
+  transform: scale(1.08);
+}
+
+.admin-mini-reject {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+}
+
+.admin-mini-reject:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  transform: scale(1.08);
+}
+
+.admin-mini-approve:disabled,
+.admin-mini-reject:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Light Mode: Overview Widgets ──────────────── */
+.admin-dashboard.light-mode .admin-chart-tooltip {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: #e2e8f0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.admin-dashboard.light-mode .admin-chart-tooltip-label {
+  color: #64748b;
+}
+
+.admin-dashboard.light-mode .admin-chart-tooltip-value {
+  color: #0f172a;
+}
+
+.admin-dashboard.light-mode .admin-activity-badge-blue {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.admin-dashboard.light-mode .admin-activity-badge-green {
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
+
+.admin-dashboard.light-mode .admin-activity-badge-amber {
+  background: rgba(217, 119, 6, 0.1);
+  color: #d97706;
+}
+
+.admin-dashboard.light-mode .admin-activity-badge-red {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+.admin-dashboard.light-mode .admin-mini-approve {
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
+
+.admin-dashboard.light-mode .admin-mini-approve:hover:not(:disabled) {
+  background: rgba(22, 163, 74, 0.2);
+}
+
+.admin-dashboard.light-mode .admin-mini-reject {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+}
+
+.admin-dashboard.light-mode .admin-mini-reject:hover:not(:disabled) {
+  background: rgba(220, 38, 38, 0.16);
+}
+
+.admin-dashboard.light-mode .admin-top-barber-rank.rank-1 {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.admin-dashboard.light-mode .admin-widget-count {
+  background: #d97706;
+  color: #fff;
+}
+
+.admin-dashboard.light-mode .recharts-cartesian-grid-horizontal line,
+.admin-dashboard.light-mode .recharts-cartesian-grid-vertical line {
+  stroke: rgba(0, 0, 0, 0.06);
+}
+
+.admin-dashboard.light-mode .recharts-text {
+  fill: #64748b !important;
 }
 
 /* ═══════════════════════════════════════
@@ -3583,6 +4177,14 @@ html[dir="rtl"] .lang-dropdown button {
   .admin-kpi-grid {
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+  }
+
+  .admin-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-chart-container {
+    min-height: 200px;
   }
 
   .admin-kpi-card {
