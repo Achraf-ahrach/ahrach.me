@@ -377,16 +377,6 @@ export default function OverviewPanel() {
     }
   };
 
-  /* ── Loading State ───────────────────────────── */
-  if (loading) {
-    return (
-      <div className="admin-loading-state">
-        <Loader2 size={32} className="admin-spinner" />
-        <p>Loading dashboard…</p>
-      </div>
-    );
-  }
-
   const hasChartData = trend.some((d) => d.count > 0);
   const totalPeriodAppointments = trend.reduce(
     (sum, item) => sum + item.count,
@@ -401,10 +391,19 @@ export default function OverviewPanel() {
           <div key={card.key} className={`admin-kpi-card ${card.gradient}`}>
             <div className="admin-kpi-icon">{card.icon}</div>
             <div className="admin-kpi-data">
-              <span className="admin-kpi-value">
-                <AnimatedCounter value={metrics?.[card.key] ?? 0} />
-              </span>
-              <span className="admin-kpi-label">{card.label}</span>
+              {loading ? (
+                <>
+                  <div className="admin-skeleton h-7 w-16 mb-1.5 rounded" />
+                  <div className="admin-skeleton h-3.5 w-24 rounded" />
+                </>
+              ) : (
+                <>
+                  <span className="admin-kpi-value">
+                    <AnimatedCounter value={metrics?.[card.key] ?? 0} />
+                  </span>
+                  <span className="admin-kpi-label">{card.label}</span>
+                </>
+              )}
             </div>
             <div className="admin-kpi-trend">
               <TrendingUp size={14} />
@@ -423,9 +422,11 @@ export default function OverviewPanel() {
               <BarChart3 size={18} className="admin-widget-icon" />
               <div className="admin-widget-title-group">
                 <h3>Appointments & Queue Trend</h3>
-                <span className="admin-chart-total-badge">
-                  Total: <strong>{totalPeriodAppointments}</strong>
-                </span>
+                {!loading && (
+                  <span className="admin-chart-total-badge">
+                    Total: <strong>{totalPeriodAppointments}</strong>
+                  </span>
+                )}
               </div>
               <div className="admin-chart-filter-toggle">
                 {chartLoading && (
@@ -445,7 +446,7 @@ export default function OverviewPanel() {
                       timeRange === key ? "active" : ""
                     }`}
                     onClick={() => handleRangeChange(key)}
-                    disabled={chartLoading}
+                    disabled={chartLoading || loading}
                   >
                     {label}
                   </button>
@@ -458,7 +459,9 @@ export default function OverviewPanel() {
                   <Loader2 size={24} className="admin-spinner" />
                 </div>
               )}
-              {hasChartData ? (
+              {loading ? (
+                <div className="admin-skeleton h-[240px] w-full rounded-xl" />
+              ) : hasChartData ? (
                 <ResponsiveContainer width="100%" height={240}>
                   <AreaChart
                     data={trend}
@@ -538,7 +541,19 @@ export default function OverviewPanel() {
               <h3>Top Performing Barbers</h3>
             </div>
             <div className="admin-top-barbers-list">
-              {topBarbers.length > 0 ? (
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="admin-top-barber-item">
+                    <div className="admin-skeleton w-6.5 h-6.5 rounded-lg flex-shrink-0" />
+                    <div className="admin-skeleton w-9 h-9 rounded-xl flex-shrink-0" />
+                    <div className="admin-top-barber-info gap-1.5">
+                      <div className="admin-skeleton h-3.5 w-28 rounded" />
+                      <div className="admin-skeleton h-3 w-16 rounded" />
+                    </div>
+                    <div className="admin-skeleton h-4 w-8 rounded flex-shrink-0" />
+                  </div>
+                ))
+              ) : topBarbers.length > 0 ? (
                 topBarbers.map((barber, idx) => (
                   <div key={barber.id} className="admin-top-barber-item">
                     <span className={`admin-top-barber-rank rank-${idx + 1}`}>
@@ -600,7 +615,18 @@ export default function OverviewPanel() {
               <h3>Live Activity Feed</h3>
             </div>
             <div className="admin-activity-list">
-              {activities.length > 0 ? (
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="admin-activity-item">
+                    <div className="admin-skeleton w-7.5 h-7.5 rounded-lg flex-shrink-0" />
+                    <div className="admin-activity-content gap-1.5">
+                      <div className="admin-skeleton h-3.5 w-32 rounded" />
+                      <div className="admin-skeleton h-3 w-44 rounded" />
+                    </div>
+                    <div className="admin-skeleton h-3 w-12 rounded flex-shrink-0" />
+                  </div>
+                ))
+              ) : activities.length > 0 ? (
                 activities.map((event) => {
                   const config = ACTIVITY_CONFIG[event.type];
                   return (
@@ -638,14 +664,28 @@ export default function OverviewPanel() {
             <div className="admin-widget-header">
               <ShieldCheck size={18} className="admin-widget-icon" />
               <h3>Pending Approvals</h3>
-              {pendingBarbers.length > 0 && (
+              {!loading && pendingBarbers.length > 0 && (
                 <span className="admin-widget-count">
                   {pendingBarbers.length}
                 </span>
               )}
             </div>
             <div className="admin-pending-list">
-              {pendingBarbers.length > 0 ? (
+              {loading ? (
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="admin-pending-mini">
+                    <div className="admin-skeleton w-8.5 h-8.5 rounded-xl flex-shrink-0" />
+                    <div className="admin-pending-info gap-1.5">
+                      <div className="admin-skeleton h-3.5 w-24 rounded" />
+                      <div className="admin-skeleton h-3 w-20 rounded" />
+                    </div>
+                    <div className="admin-pending-actions gap-1.5">
+                      <div className="admin-skeleton w-7.5 h-7.5 rounded-lg" />
+                      <div className="admin-skeleton w-7.5 h-7.5 rounded-lg" />
+                    </div>
+                  </div>
+                ))
+              ) : pendingBarbers.length > 0 ? (
                 pendingBarbers.slice(0, 4).map((barber) => (
                   <div key={barber.id} className="admin-pending-mini">
                     <div className="admin-pending-avatar">

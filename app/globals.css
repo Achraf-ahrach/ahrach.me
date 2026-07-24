@@ -2418,6 +2418,31 @@ html[dir="rtl"] .lang-dropdown button {
   color: #7c3aed;
 }
 
+/* ── Skeleton Shimmer / Pulse ───────────────────── */
+.admin-skeleton {
+  background: var(--admin-surface-3);
+  border-radius: 6px;
+  display: inline-block;
+  animation: admin-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes admin-pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+    background: var(--admin-border-hover);
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+.admin-dashboard.light-mode .admin-skeleton {
+  background: #e2e8f0;
+}
+
 .admin-widget-icon {
   color: var(--admin-violet);
   flex-shrink: 0;
