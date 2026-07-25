@@ -2646,6 +2646,21 @@ html[dir="rtl"] .lang-dropdown button {
   color: var(--admin-text-muted);
 }
 
+@keyframes adminFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-fade-in {
+  animation: adminFadeIn 150ms ease-out forwards;
+}
+
 .admin-top-barber-rank.rank-1 {
   background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;

@@ -179,39 +179,61 @@ export default function OverviewPanel() {
   const [topBarbers, setTopBarbers] = useState<TopBarber[]>([]);
   const [activities, setActivities] = useState<ActivityEvent[]>([]);
   const [pendingBarbers, setPendingBarbers] = useState<ProfileRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Granular Independent Loading States
+  const [kpisLoading, setKpisLoading] = useState(true);
+  const [chartLoading, setChartLoading] = useState(true);
+  const [feedLoading, setFeedLoading] = useState(true);
+  const [topBarbersLoading, setTopBarbersLoading] = useState(true);
+  const [pendingApprovalsLoading, setPendingApprovalsLoading] = useState(true);
+
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>("7d");
-  const [chartLoading, setChartLoading] = useState(false);
   const [failedAvatars, setFailedAvatars] = useState<Set<string>>(new Set());
 
   /* ── Debounce ref for realtime events ────────── */
   const realtimeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* ── Full initial load (chart + leaderboard included) ─ */
-  const loadAll = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [m, trendRes, tb, act, pb] = await Promise.all([
-        fetchDashboardMetrics(),
-        fetchAppointmentsTrend("7d"),
-        fetchTopBarbers(),
-        fetchRecentActivities(),
-        fetchPendingBarbers(),
-      ]);
-      setMetrics(m);
-      setTrend(trendRes.points);
-      setTotalPeriodAppointments(trendRes.totalCount);
-      setCompletedPeriodAppointments(trendRes.completedCount);
-      setTopBarbers(tb);
-      setActivities(act);
-      setPendingBarbers(pb);
-    } catch (err) {
-      console.error("Failed to load overview data:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  /* ── Independent Progressive Initial Load ──────────────── */
+  const loadAll = useCallback(() => {
+    // 1. KPI Metrics
+    setKpisLoading(true);
+    fetchDashboardMetrics()
+      .then((m) => setMetrics(m))
+      .catch((err) => console.error("Failed to load dashboard metrics:", err))
+      .finally(() => setKpisLoading(false));
+
+    // 2. Appointments Chart Trend
+    setChartLoading(true);
+    fetchAppointmentsTrend(timeRange)
+      .then((res) => {
+        setTrend(res.points);
+        setTotalPeriodAppointments(res.totalCount);
+        setCompletedPeriodAppointments(res.completedCount);
+      })
+      .catch((err) => console.error("Failed to load appointment trends:", err))
+      .finally(() => setChartLoading(false));
+
+    // 3. Top Performing Barbers
+    setTopBarbersLoading(true);
+    fetchTopBarbers()
+      .then((tb) => setTopBarbers(tb))
+      .catch((err) => console.error("Failed to load top barbers:", err))
+      .finally(() => setTopBarbersLoading(false));
+
+    // 4. Live Activity Feed
+    setFeedLoading(true);
+    fetchRecentActivities()
+      .then((act) => setActivities(act))
+      .catch((err) => console.error("Failed to load recent activities:", err))
+      .finally(() => setFeedLoading(false));
+
+    // 5. Quick Pending Approvals
+    setPendingApprovalsLoading(true);
+    fetchPendingBarbers()
+      .then((pb) => setPendingBarbers(pb))
+      .catch((err) => console.error("Failed to load pending barbers:", err))
+      .finally(() => setPendingApprovalsLoading(false));
+  }, [timeRange]);
 
   /* ── Range change handler ───────────────────── */
   const handleRangeChange = async (newRange: TimeRange) => {
@@ -400,8 +422,8 @@ export default function OverviewPanel() {
         {CARDS.map((card) => (
           <div key={card.key} className={`admin-kpi-card ${card.gradient}`}>
             <div className="admin-kpi-icon">{card.icon}</div>
-            <div className="admin-kpi-data">
-              {loading ? (
+            <div className={`admin-kpi-data ${!kpisLoading ? "admin-fade-in" : ""}`}>
+              {kpisLoading ? (
                 <>
                   <div className="admin-skeleton h-7 w-16 mb-1.5 rounded" />
                   <div className="admin-skeleton h-3.5 w-24 rounded" />
@@ -432,15 +454,15 @@ export default function OverviewPanel() {
               <BarChart3 size={18} className="admin-widget-icon" />
               <div className="admin-widget-title-group">
                 <h3>Appointments</h3>
-                {!loading && (
-                  <>
+                {!chartLoading && (
+                  <div className="flex items-center gap-2 admin-fade-in">
                     <span className="admin-chart-total-badge">
                       Total: <strong>{totalPeriodAppointments}</strong>
                     </span>
                     <span className="admin-chart-total-badge admin-chart-completed-badge">
                       Completed: <strong>{completedPeriodAppointments}</strong>
                     </span>
-                  </>
+                  </div>
                 )}
               </div>
               <div className="admin-chart-filter-toggle">
@@ -461,7 +483,7 @@ export default function OverviewPanel() {
                       timeRange === key ? "active" : ""
                     }`}
                     onClick={() => handleRangeChange(key)}
-                    disabled={chartLoading || loading}
+                    disabled={chartLoading}
                   >
                     {label}
                   </button>
@@ -469,78 +491,75 @@ export default function OverviewPanel() {
               </div>
             </div>
             <div className="admin-chart-container">
-              {chartLoading && (
-                <div className="admin-chart-loading-overlay">
-                  <Loader2 size={24} className="admin-spinner" />
-                </div>
-              )}
-              {loading ? (
+              {chartLoading ? (
                 <div className="admin-skeleton h-[240px] w-full rounded-xl" />
               ) : hasChartData ? (
-                <ResponsiveContainer width="100%" height={240}>
-                  <AreaChart
-                    data={trend}
-                    margin={{ top: 8, right: 12, left: -20, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient
-                        id="chartGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="#8b5cf6"
-                          stopOpacity={0.35}
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="#8b5cf6"
-                          stopOpacity={0.02}
-                        />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="rgba(255,255,255,0.05)"
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fill: "#8888a8", fontSize: 11 }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={formatXAxisTick}
-                      interval="preserveStartEnd"
-                      minTickGap={25}
-                    />
-                    <YAxis
-                      tick={{ fill: "#8888a8", fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                      allowDecimals={false}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area
-                      type="monotone"
-                      dataKey="count"
-                      stroke="#8b5cf6"
-                      strokeWidth={2.5}
-                      fill="url(#chartGradient)"
-                      dot={{ r: 4, fill: "#8b5cf6", strokeWidth: 0 }}
-                      activeDot={{
-                        r: 6,
-                        fill: "#a78bfa",
-                        stroke: "#8b5cf6",
-                        strokeWidth: 2,
-                      }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <div className="admin-fade-in w-full h-[240px]">
+                  <ResponsiveContainer width="100%" height={240}>
+                    <AreaChart
+                      data={trend}
+                      margin={{ top: 8, right: 12, left: -20, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient
+                          id="chartGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor="#8b5cf6"
+                            stopOpacity={0.35}
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor="#8b5cf6"
+                            stopOpacity={0.02}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="rgba(255,255,255,0.05)"
+                        vertical={false}
+                      />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fill: "#8888a8", fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={formatXAxisTick}
+                        interval="preserveStartEnd"
+                        minTickGap={25}
+                      />
+                      <YAxis
+                        tick={{ fill: "#8888a8", fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Area
+                        type="monotone"
+                        dataKey="count"
+                        stroke="#8b5cf6"
+                        strokeWidth={2.5}
+                        fill="url(#chartGradient)"
+                        dot={{ r: 4, fill: "#8b5cf6", strokeWidth: 0 }}
+                        activeDot={{
+                          r: 6,
+                          fill: "#a78bfa",
+                          stroke: "#8b5cf6",
+                          strokeWidth: 2,
+                        }}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
               ) : (
-                <div className="admin-widget-empty">
+                <div className="admin-widget-empty admin-fade-in">
                   <BarChart3 size={36} />
                   <p>No appointment data yet</p>
                   <span>Chart will populate as bookings come in</span>
@@ -556,7 +575,7 @@ export default function OverviewPanel() {
               <h3>Top Performing Barbers</h3>
             </div>
             <div className="admin-top-barbers-list">
-              {loading ? (
+              {topBarbersLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="admin-top-barber-item">
                     <div className="admin-skeleton w-6.5 h-6.5 rounded-lg flex-shrink-0" />
@@ -570,7 +589,7 @@ export default function OverviewPanel() {
                 ))
               ) : topBarbers.length > 0 ? (
                 topBarbers.map((barber, idx) => (
-                  <div key={barber.id} className="admin-top-barber-item">
+                  <div key={barber.id} className="admin-top-barber-item admin-fade-in">
                     <span className={`admin-top-barber-rank rank-${idx + 1}`}>
                       {idx + 1}
                     </span>
@@ -616,7 +635,7 @@ export default function OverviewPanel() {
                   </div>
                 ))
               ) : (
-                <div className="admin-widget-empty compact">
+                <div className="admin-widget-empty compact admin-fade-in">
                   <Scissors size={28} />
                   <p>No barber data yet</p>
                 </div>
@@ -634,7 +653,7 @@ export default function OverviewPanel() {
               <h3>Live Activity Feed</h3>
             </div>
             <div className="admin-activity-list">
-              {loading ? (
+              {feedLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="admin-activity-item">
                     <div className="admin-skeleton w-7.5 h-7.5 rounded-lg flex-shrink-0" />
@@ -649,7 +668,7 @@ export default function OverviewPanel() {
                 activities.map((event) => {
                   const config = ACTIVITY_CONFIG[event.type];
                   return (
-                    <div key={event.id} className="admin-activity-item">
+                    <div key={event.id} className="admin-activity-item admin-fade-in">
                       <div
                         className={`admin-activity-badge ${config.className}`}
                       >
@@ -670,7 +689,7 @@ export default function OverviewPanel() {
                   );
                 })
               ) : (
-                <div className="admin-widget-empty compact">
+                <div className="admin-widget-empty compact admin-fade-in">
                   <Activity size={28} />
                   <p>No recent activity</p>
                 </div>
@@ -683,14 +702,14 @@ export default function OverviewPanel() {
             <div className="admin-widget-header">
               <ShieldCheck size={18} className="admin-widget-icon" />
               <h3>Pending Approvals</h3>
-              {!loading && pendingBarbers.length > 0 && (
-                <span className="admin-widget-count">
+              {!pendingApprovalsLoading && pendingBarbers.length > 0 && (
+                <span className="admin-widget-count admin-fade-in">
                   {pendingBarbers.length}
                 </span>
               )}
             </div>
             <div className="admin-pending-list">
-              {loading ? (
+              {pendingApprovalsLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="admin-pending-mini">
                     <div className="admin-skeleton w-8.5 h-8.5 rounded-xl flex-shrink-0" />
@@ -706,7 +725,7 @@ export default function OverviewPanel() {
                 ))
               ) : pendingBarbers.length > 0 ? (
                 pendingBarbers.slice(0, 4).map((barber) => (
-                  <div key={barber.id} className="admin-pending-mini">
+                  <div key={barber.id} className="admin-pending-mini admin-fade-in">
                     <div className="admin-pending-avatar">
                       {barber.avatar_url && !failedAvatars.has(barber.id) ? (
                         <img
@@ -754,7 +773,7 @@ export default function OverviewPanel() {
                   </div>
                 ))
               ) : (
-                <div className="admin-widget-empty compact">
+                <div className="admin-widget-empty compact admin-fade-in">
                   <Inbox size={28} />
                   <p>All clear!</p>
                   <span>No pending barbers to review</span>
