@@ -190,6 +190,11 @@ export default function OverviewPanel() {
   const [timeRange, setTimeRange] = useState<TimeRange>("7d");
   const [failedAvatars, setFailedAvatars] = useState<Set<string>>(new Set());
 
+  const timeRangeRef = useRef(timeRange);
+  useEffect(() => {
+    timeRangeRef.current = timeRange;
+  }, [timeRange]);
+
   /* ── Debounce ref for realtime events ────────── */
   const realtimeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -204,7 +209,7 @@ export default function OverviewPanel() {
 
     // 2. Appointments Chart Trend
     setChartLoading(true);
-    fetchAppointmentsTrend(timeRange)
+    fetchAppointmentsTrend(timeRangeRef.current)
       .then((res) => {
         setTrend(res.points);
         setTotalPeriodAppointments(res.totalCount);
@@ -233,7 +238,7 @@ export default function OverviewPanel() {
       .then((pb) => setPendingBarbers(pb))
       .catch((err) => console.error("Failed to load pending barbers:", err))
       .finally(() => setPendingApprovalsLoading(false));
-  }, [timeRange]);
+  }, []);
 
   /* ── Range change handler ───────────────────── */
   const handleRangeChange = async (newRange: TimeRange) => {
@@ -287,36 +292,98 @@ export default function OverviewPanel() {
     [timeRange, trend]
   );
 
-  /* ── Lightweight refresh for realtime widgets only ─ */
-  const refreshRealtimeWidgets = useCallback(async () => {
+  /* ── Realtime Event Parsers for Instant Feed Updates ── */
+  const parseAppointmentPayload = useCallback((payload: any): ActivityEvent | null => {
+    const record = payload.new || payload.old;
+    if (!record) return null;
+    const { id, status, updated_at, created_at, guest_name } = record;
+    const clientName = guest_name || "A client";
+    const ts = updated_at || created_at || new Date().toISOString();
+
+    if (status === "completed") {
+      return {
+        id: `realtime-comp-${id}-${Date.now()}`,
+        type: "completion",
+        title: "Appointment Completed",
+        description: `${clientName}'s appointment completed`,
+        timestamp: ts,
+      };
+    } else if (status === "cancelled") {
+      return {
+        id: `realtime-cancel-${id}-${Date.now()}`,
+        type: "cancellation",
+        title: "Appointment Cancelled",
+        description: `${clientName} cancelled appointment`,
+        timestamp: ts,
+      };
+    } else if (status === "no_show") {
+      return {
+        id: `realtime-noshow-${id}-${Date.now()}`,
+        type: "cancellation",
+        title: "Client No-Show",
+        description: `${clientName} didn't show up`,
+        timestamp: ts,
+      };
+    } else if (status === "pending" || status === "approved") {
+      return {
+        id: `realtime-book-${id}-${Date.now()}`,
+        type: "booking",
+        title: "New Queue Booking",
+        description: `${clientName} booked an appointment`,
+        timestamp: ts,
+      };
+    }
+    return null;
+  }, []);
+
+  const parseProfilePayload = useCallback((payload: any): ActivityEvent | null => {
+    const record = payload.new;
+    if (!record || payload.eventType !== "INSERT") return null;
+    const { id, full_name, role, created_at } = record;
+    const name = full_name || (role === "barber" ? "A barber" : "A client");
+    const ts = created_at || new Date().toISOString();
+
+    return {
+      id: `realtime-reg-${id}-${Date.now()}`,
+      type: "registration",
+      title: role === "barber" ? "New Barber Registered" : "New Client Joined",
+      description: `${name} joined the platform`,
+      timestamp: ts,
+    };
+  }, []);
+
+  /* ── Background Sync for Aggregate Widgets (KPIs, Chart, Top Barbers) ─ */
+  const syncAggregatesBackground = useCallback(async () => {
     try {
-      const [m, act, pb] = await Promise.all([
+      const [m, trendRes, tb] = await Promise.all([
         fetchDashboardMetrics(),
-        fetchRecentActivities(),
-        fetchPendingBarbers(),
+        fetchAppointmentsTrend(timeRangeRef.current),
+        fetchTopBarbers(),
       ]);
       setMetrics(m);
-      setActivities(act);
-      setPendingBarbers(pb);
+      setTrend(trendRes.points);
+      setTotalPeriodAppointments(trendRes.totalCount);
+      setCompletedPeriodAppointments(trendRes.completedCount);
+      setTopBarbers(tb);
     } catch (err) {
-      console.error("Realtime refresh failed:", err);
+      console.error("Background aggregate sync failed:", err);
     }
   }, []);
 
-  /* ── Debounced realtime handler (500ms) ───────── */
+  /* ── Debounced realtime aggregate sync (500ms) ───────── */
   const handleRealtimeEvent = useCallback(() => {
     if (realtimeTimer.current) clearTimeout(realtimeTimer.current);
     realtimeTimer.current = setTimeout(() => {
-      refreshRealtimeWidgets();
+      syncAggregatesBackground();
     }, 500);
-  }, [refreshRealtimeWidgets]);
+  }, [syncAggregatesBackground]);
 
   /* ── Initial load ────────────────────────────── */
   useEffect(() => {
     loadAll();
   }, [loadAll]);
 
-  /* ── Supabase Realtime Subscriptions ─────────── */
+  /* ── Single Centralized Supabase Realtime Subscription ─ */
   useEffect(() => {
     const supabase = createBrowserClient();
 
@@ -330,7 +397,15 @@ export default function OverviewPanel() {
           table: "appointments",
         },
         (payload) => {
-          console.log("⚡ Realtime event [appointments]:", payload);
+          console.log("⚡ Realtime appointment event:", payload);
+          // 1. Instant Active Update: Live Activity Feed
+          const eventItem = parseAppointmentPayload(payload);
+          if (eventItem) {
+            setActivities((prev) =>
+              [eventItem, ...prev.filter((e) => e.id !== eventItem.id)].slice(0, 8)
+            );
+          }
+          // 2. Debounced Background Sync for Aggregates (KPI Cards, Chart, Top Barbers)
           handleRealtimeEvent();
         }
       )
@@ -342,20 +417,44 @@ export default function OverviewPanel() {
           table: "profiles",
         },
         (payload) => {
-          console.log("⚡ Realtime event [profiles]:", payload);
+          console.log("⚡ Realtime profile event:", payload);
+          // 1. Instant Active Update: Pending Approvals & Activity Feed
+          const record = payload.new as ProfileRow | undefined;
+          if (record && record.role === "barber") {
+            if (record.status === "pending") {
+              setPendingBarbers((prev) => {
+                const exists = prev.some((b) => b.id === record.id);
+                if (exists) {
+                  return prev.map((b) => (b.id === record.id ? { ...b, ...record } : b));
+                }
+                return [record, ...prev];
+              });
+            } else {
+              setPendingBarbers((prev) => prev.filter((b) => b.id !== record.id));
+            }
+          }
+
+          const regEvent = parseProfilePayload(payload);
+          if (regEvent) {
+            setActivities((prev) =>
+              [regEvent, ...prev.filter((e) => e.id !== regEvent.id)].slice(0, 8)
+            );
+          }
+
+          // 2. Debounced Background Sync for Aggregates (KPI Cards, Chart, Top Barbers)
           handleRealtimeEvent();
         }
       )
       .subscribe((status, err) => {
         console.log("📡 Realtime Subscription Status:", status);
-        if (err) console.error("❌ Realtime Error:", err);
+        if (err) console.error("❌ Realtime Subscription Error:", err);
       });
 
     return () => {
       if (realtimeTimer.current) clearTimeout(realtimeTimer.current);
       supabase.removeChannel(channel);
     };
-  }, [handleRealtimeEvent]);
+  }, [handleRealtimeEvent, parseAppointmentPayload, parseProfilePayload]);
 
   /* ── Approve / Reject Handlers ───────────────── */
   const handleApprove = async (id: string) => {
@@ -375,13 +474,13 @@ export default function OverviewPanel() {
       const res = await approveBarber(id);
       if (!res.success) {
         // Rollback on failure — reload fresh data
-        await refreshRealtimeWidgets();
+        await syncAggregatesBackground();
       }
       // Background sync all server state
       router.refresh();
     } catch (err) {
       console.error("Approve failed:", err);
-      await refreshRealtimeWidgets();
+      await syncAggregatesBackground();
     } finally {
       setActionLoading(null);
     }
@@ -402,12 +501,12 @@ export default function OverviewPanel() {
     try {
       const res = await rejectBarber(id, "reject");
       if (!res.success) {
-        await refreshRealtimeWidgets();
+        await syncAggregatesBackground();
       }
       router.refresh();
     } catch (err) {
       console.error("Reject failed:", err);
-      await refreshRealtimeWidgets();
+      await syncAggregatesBackground();
     } finally {
       setActionLoading(null);
     }
