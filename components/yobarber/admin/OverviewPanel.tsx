@@ -744,16 +744,17 @@ export default function OverviewPanel() {
                         {barber.completedCount} completed
                       </span>
                     </div>
-                    <div className="admin-top-barber-rating">
-                      {barber.avgRating !== null ? (
-                        <>
-                          <Star size={13} className="admin-star-icon" />
-                          <span>{barber.avgRating}</span>
-                        </>
-                      ) : (
-                        <span className="admin-no-rating">—</span>
-                      )}
-                    </div>
+                    {barber.avgRating !== null ? (
+                      <div className="admin-top-barber-rating">
+                        <Star size={13} className="admin-star-icon" />
+                        <span>{barber.avgRating}</span>
+                      </div>
+                    ) : (
+                      <div className="admin-top-barber-rating admin-no-rating">
+                        <Star size={13} className="admin-star-icon-dim" />
+                        <span>N/A</span>
+                      </div>
+                    )}
                   </div>
                 ))
               ) : (

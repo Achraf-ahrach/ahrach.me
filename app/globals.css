@@ -2733,15 +2733,20 @@ html[dir="rtl"] .lang-dropdown button {
   flex-shrink: 0;
 }
 
+.admin-top-barber-rating.admin-no-rating {
+  color: var(--admin-text-dim);
+  font-weight: 500;
+}
+
 .admin-star-icon {
   fill: var(--admin-amber);
   color: var(--admin-amber);
 }
 
-.admin-no-rating {
-  font-size: 13px;
+.admin-star-icon-dim {
+  fill: var(--admin-text-dim);
   color: var(--admin-text-dim);
-  font-weight: 400;
+  opacity: 0.45;
 }
 
 /* ── Activity Feed ─────────────────────────────── */
