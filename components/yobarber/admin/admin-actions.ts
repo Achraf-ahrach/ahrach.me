@@ -97,6 +97,18 @@ export async function fetchDashboardMetrics(): Promise<DashboardMetrics> {
   };
 }
 
+/* ── Avatar URL Formatter ───────────────────────── */
+function formatAvatarUrl(url: string | null | undefined): string | null {
+  if (!url || !url.trim()) return null;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (supabaseUrl) {
+    const cleanPath = url.replace(/^avatars\//, "");
+    return `${supabaseUrl}/storage/v1/object/public/avatars/${cleanPath}`;
+  }
+  return url;
+}
+
 /* ── Fetch Pending Barbers ─────────────────────── */
 export async function fetchPendingBarbers(): Promise<ProfileRow[]> {
   const supabase = await createAdminClient();
@@ -109,7 +121,11 @@ export async function fetchPendingBarbers(): Promise<ProfileRow[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data as ProfileRow[]) ?? [];
+  const rows = (data as ProfileRow[]) ?? [];
+  return rows.map((r) => ({
+    ...r,
+    avatar_url: formatAvatarUrl(r.avatar_url),
+  }));
 }
 
 /* ── Fetch Users (paginated, searchable, status filtered) ─ */
@@ -153,7 +169,12 @@ export async function fetchUsers(
   const { data, count, error } = await query;
 
   if (error) throw new Error(error.message);
-  return { data: (data as ProfileRow[]) ?? [], total: count ?? 0 };
+  const rows = (data as ProfileRow[]) ?? [];
+  const formatted = rows.map((r) => ({
+    ...r,
+    avatar_url: formatAvatarUrl(r.avatar_url),
+  }));
+  return { data: formatted, total: count ?? 0 };
 }
 
 /* ── Approve Barber ────────────────────────────── */
@@ -446,7 +467,7 @@ export async function fetchTopBarbers(): Promise<TopBarber[]> {
     results.push({
       id: barber.id,
       full_name: barber.full_name || "Unknown",
-      avatar_url: barber.avatar_url,
+      avatar_url: formatAvatarUrl(barber.avatar_url),
       completedCount: completedCount ?? 0,
       avgRating,
     });

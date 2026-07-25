@@ -183,6 +183,7 @@ export default function OverviewPanel() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>("7d");
   const [chartLoading, setChartLoading] = useState(false);
+  const [failedAvatars, setFailedAvatars] = useState<Set<string>>(new Set());
 
   /* ── Debounce ref for realtime events ────────── */
   const realtimeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -574,10 +575,14 @@ export default function OverviewPanel() {
                       {idx + 1}
                     </span>
                     <div className="admin-top-barber-avatar">
-                      {barber.avatar_url ? (
+                      {barber.avatar_url && !failedAvatars.has(barber.id) ? (
                         <img
                           src={barber.avatar_url}
                           alt={barber.full_name}
+                          referrerPolicy="no-referrer"
+                          onError={() =>
+                            setFailedAvatars((prev) => new Set(prev).add(barber.id))
+                          }
                         />
                       ) : (
                         <span className="admin-top-barber-initials">
@@ -703,10 +708,14 @@ export default function OverviewPanel() {
                 pendingBarbers.slice(0, 4).map((barber) => (
                   <div key={barber.id} className="admin-pending-mini">
                     <div className="admin-pending-avatar">
-                      {barber.avatar_url ? (
+                      {barber.avatar_url && !failedAvatars.has(barber.id) ? (
                         <img
                           src={barber.avatar_url}
                           alt={barber.full_name}
+                          referrerPolicy="no-referrer"
+                          onError={() =>
+                            setFailedAvatars((prev) => new Set(prev).add(barber.id))
+                          }
                         />
                       ) : (
                         <UserCheck size={16} />

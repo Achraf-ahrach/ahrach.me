@@ -278,6 +278,7 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
                             <img
                               src={user.avatar_url}
                               alt=""
+                              referrerPolicy="no-referrer"
                               className="admin-user-avatar admin-user-avatar-img"
                               onClick={() => setProfileModal(user)}
                               onError={() => setFailedAvatars(prev => new Set(prev).add(user.id))}
@@ -569,6 +570,7 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
                 <img
                   src={profileModal.avatar_url}
                   alt=""
+                  referrerPolicy="no-referrer"
                   className="admin-lightbox-avatar"
                   onError={() => setFailedAvatars(prev => new Set(prev).add(profileModal.id))}
                 />

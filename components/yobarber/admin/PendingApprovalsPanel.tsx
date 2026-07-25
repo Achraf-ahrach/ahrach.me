@@ -174,6 +174,7 @@ export default function PendingApprovalsPanel() {
                           <img
                             src={barber.avatar_url}
                             alt=""
+                            referrerPolicy="no-referrer"
                             className="admin-user-avatar admin-user-avatar-img"
                             onClick={() => setProfileModal(barber)}
                             onError={() => setFailedAvatars(prev => new Set(prev).add(barber.id))}
@@ -331,6 +332,7 @@ export default function PendingApprovalsPanel() {
                 <img
                   src={profileModal.avatar_url}
                   alt=""
+                  referrerPolicy="no-referrer"
                   className="admin-lightbox-avatar"
                   onError={() => setFailedAvatars(prev => new Set(prev).add(profileModal.id))}
                 />

@@ -145,6 +145,7 @@ export default function AdminShell({
                 <img
                   src={adminAvatar}
                   alt={adminName}
+                  referrerPolicy="no-referrer"
                   className="admin-avatar-img"
                 />
               ) : (
