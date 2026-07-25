@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient as createBrowserClient } from "@/lib/supabase/supabase-client";
 import {
   fetchDashboardMetrics,
@@ -183,89 +184,97 @@ function getEntityId(eventId: string): string {
    ═══════════════════════════════════════════════ */
 export default function OverviewPanel() {
   const router = useRouter();
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [trend, setTrend] = useState<TrendDataPoint[]>([]);
-  const [totalPeriodAppointments, setTotalPeriodAppointments] = useState(0);
-  const [completedPeriodAppointments, setCompletedPeriodAppointments] = useState(0);
-  const [topBarbers, setTopBarbers] = useState<TopBarber[]>([]);
-  const [activities, setActivities] = useState<ActivityEvent[]>([]);
-  const [pendingBarbers, setPendingBarbers] = useState<ProfileRow[]>([]);
-  // Granular Independent Loading States
-  const [kpisLoading, setKpisLoading] = useState(true);
-  const [chartLoading, setChartLoading] = useState(true);
-  const [feedLoading, setFeedLoading] = useState(true);
-  const [topBarbersLoading, setTopBarbersLoading] = useState(true);
-  const [pendingApprovalsLoading, setPendingApprovalsLoading] = useState(true);
-
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [timeRange, setTimeRange] = useState<TimeRange>("7d");
   const [failedAvatars, setFailedAvatars] = useState<Set<string>>(new Set());
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const timeRangeRef = useRef(timeRange);
-  useEffect(() => {
-    timeRangeRef.current = timeRange;
-  }, [timeRange]);
+  const [realtimeActivities, setRealtimeActivities] = useState<ActivityEvent[]>([]);
+  const [realtimePendingBarbers, setRealtimePendingBarbers] = useState<ProfileRow[]>([]);
 
   /* ── Debounce ref for realtime events ────────── */
   const realtimeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* ── Independent Progressive Initial Load ──────────────── */
-  const loadAll = useCallback(() => {
-    // 1. KPI Metrics
-    setKpisLoading(true);
-    fetchDashboardMetrics()
-      .then((m) => setMetrics(m))
-      .catch((err) => console.error("Failed to load dashboard metrics:", err))
-      .finally(() => setKpisLoading(false));
+  /* ── 1. KPI Metrics Query ── */
+  const { data: metrics = null, isLoading: kpisLoading } = useQuery({
+    queryKey: ["admin", "metrics"],
+    queryFn: fetchDashboardMetrics,
+    staleTime: 1000 * 60 * 5,
+  });
 
-    // 2. Appointments Chart Trend
-    setChartLoading(true);
-    fetchAppointmentsTrend(timeRangeRef.current)
-      .then((res) => {
-        setTrend(res.points);
-        setTotalPeriodAppointments(res.totalCount);
-        setCompletedPeriodAppointments(res.completedCount);
-      })
-      .catch((err) => console.error("Failed to load appointment trends:", err))
-      .finally(() => setChartLoading(false));
+  /* ── 2. Appointments Chart Trend Query ── */
+  const { data: trendResult = { points: [], totalCount: 0, completedCount: 0 }, isLoading: chartLoading } = useQuery({
+    queryKey: ["admin", "trend", timeRange],
+    queryFn: () => fetchAppointmentsTrend(timeRange),
+    staleTime: 1000 * 60 * 5,
+  });
+  const trend = trendResult.points;
+  const totalPeriodAppointments = trendResult.totalCount;
+  const completedPeriodAppointments = trendResult.completedCount;
 
-    // 3. Top Performing Barbers
-    setTopBarbersLoading(true);
-    fetchTopBarbers()
-      .then((tb) => setTopBarbers(tb))
-      .catch((err) => console.error("Failed to load top barbers:", err))
-      .finally(() => setTopBarbersLoading(false));
+  /* ── 3. Top Performing Barbers Query ── */
+  const { data: topBarbers = [], isLoading: topBarbersLoading } = useQuery({
+    queryKey: ["admin", "topBarbers"],
+    queryFn: fetchTopBarbers,
+    staleTime: 1000 * 60 * 5,
+  });
 
-    // 4. Live Activity Feed
-    setFeedLoading(true);
-    fetchRecentActivities()
-      .then((act) => setActivities(act))
-      .catch((err) => console.error("Failed to load recent activities:", err))
-      .finally(() => setFeedLoading(false));
+  /* ── 4. Recent Activities Query ── */
+  const { data: initialActivities = [], isLoading: feedLoading } = useQuery({
+    queryKey: ["admin", "activities"],
+    queryFn: fetchRecentActivities,
+    staleTime: 1000 * 60 * 5,
+  });
 
-    // 5. Quick Pending Approvals
-    setPendingApprovalsLoading(true);
-    fetchPendingBarbers()
-      .then((pb) => setPendingBarbers(pb))
-      .catch((err) => console.error("Failed to load pending barbers:", err))
-      .finally(() => setPendingApprovalsLoading(false));
-  }, []);
+  /* ── 5. Quick Pending Approvals Query ── */
+  const { data: serverPendingBarbers = [], isLoading: pendingApprovalsLoading } = useQuery({
+    queryKey: ["admin", "pendingBarbers"],
+    queryFn: fetchPendingBarbers,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // Merge server activities + instant local realtime socket additions
+  const activities = useMemo(() => {
+    const merged: ActivityEvent[] = [];
+    const seenEntityIds = new Set<string>();
+
+    for (const item of initialActivities) {
+      merged.push(item);
+      seenEntityIds.add(getEntityId(item.id));
+    }
+
+    for (const item of realtimeActivities) {
+      const entityId = getEntityId(item.id);
+      if (!seenEntityIds.has(entityId)) {
+        merged.push(item);
+        seenEntityIds.add(entityId);
+      }
+    }
+
+    merged.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    return merged.slice(0, 8);
+  }, [initialActivities, realtimeActivities]);
+
+  // Merge server pending barbers + instant local realtime socket additions
+  const pendingBarbers = useMemo(() => {
+    const map = new Map<string, ProfileRow>();
+    for (const b of serverPendingBarbers) {
+      map.set(b.id, b);
+    }
+    for (const b of realtimePendingBarbers) {
+      if (b.status === "pending") {
+        map.set(b.id, b);
+      } else {
+        map.delete(b.id);
+      }
+    }
+    return Array.from(map.values());
+  }, [serverPendingBarbers, realtimePendingBarbers]);
 
   /* ── Range change handler ───────────────────── */
-  const handleRangeChange = async (newRange: TimeRange) => {
-    if (newRange === timeRange || chartLoading) return;
+  const handleRangeChange = (newRange: TimeRange) => {
+    if (newRange === timeRange) return;
     setTimeRange(newRange);
-    setChartLoading(true);
-    try {
-      const res = await fetchAppointmentsTrend(newRange);
-      setTrend(res.points);
-      setTotalPeriodAppointments(res.totalCount);
-      setCompletedPeriodAppointments(res.completedCount);
-    } catch (err) {
-      console.error("Failed to fetch trend for range:", newRange, err);
-    } finally {
-      setChartLoading(false);
-    }
   };
 
   /* ── X-Axis tick formatter for clean 30D / Month labels ─ */
@@ -395,64 +404,13 @@ export default function OverviewPanel() {
     return eventItem;
   }, []);
 
-  /* ── Background Sync for Aggregate Widgets (KPIs, Chart, Top Barbers) ─ */
-  const syncAggregatesBackground = useCallback(async () => {
-    try {
-      const [m, trendRes, tb, freshActivities] = await Promise.all([
-        fetchDashboardMetrics(),
-        fetchAppointmentsTrend(timeRangeRef.current),
-        fetchTopBarbers(),
-        fetchRecentActivities(),
-      ]);
-      setMetrics(m);
-      setTrend(trendRes.points);
-      setTotalPeriodAppointments(trendRes.totalCount);
-      setCompletedPeriodAppointments(trendRes.completedCount);
-      setTopBarbers(tb);
-
-      setActivities((prev) => {
-        const merged: ActivityEvent[] = [];
-        const seenEntityIds = new Set<string>();
-
-        // 1. Fresh server activities with full joined relations take precedence
-        for (const item of freshActivities) {
-          merged.push(item);
-          seenEntityIds.add(getEntityId(item.id));
-        }
-
-        // 2. Retain any un-synced realtime items for entities not present in server response
-        for (const item of prev) {
-          const entityId = getEntityId(item.id);
-          if (!seenEntityIds.has(entityId)) {
-            merged.push(item);
-            seenEntityIds.add(entityId);
-          }
-        }
-
-        // 3. Sort by timestamp DESC
-        merged.sort(
-          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        );
-
-        return merged.slice(0, 8);
-      });
-    } catch (err) {
-      console.error("Background aggregate sync failed:", err);
-    }
-  }, []);
-
-  /* ── Debounced realtime aggregate sync (500ms) ───────── */
+  /* ── Debounced realtime aggregate invalidation ───────── */
   const handleRealtimeEvent = useCallback(() => {
     if (realtimeTimer.current) clearTimeout(realtimeTimer.current);
     realtimeTimer.current = setTimeout(() => {
-      syncAggregatesBackground();
+      queryClient.invalidateQueries({ queryKey: ["admin"] });
     }, 500);
-  }, [syncAggregatesBackground]);
-
-  /* ── Initial load ────────────────────────────── */
-  useEffect(() => {
-    loadAll();
-  }, [loadAll]);
+  }, [queryClient]);
 
   // Keep stable refs for realtime handlers to prevent subscription teardown on re-renders
   const parseAppointmentPayloadRef = useRef(parseAppointmentPayload);
@@ -490,7 +448,7 @@ export default function OverviewPanel() {
           const eventItem = parseAppointmentPayloadRef.current(payload);
           if (eventItem) {
             const entityId = getEntityId(eventItem.id);
-            setActivities((prev) =>
+            setRealtimeActivities((prev) =>
               [eventItem, ...prev.filter((e) => getEntityId(e.id) !== entityId)].slice(0, 8)
             );
           }
@@ -508,23 +466,19 @@ export default function OverviewPanel() {
           console.log("⚡ Realtime profile event:", payload);
           const record = payload.new as ProfileRow | undefined;
           if (record && record.role === "barber") {
-            if (record.status === "pending") {
-              setPendingBarbers((prev) => {
-                const exists = prev.some((b) => b.id === record.id);
-                if (exists) {
-                  return prev.map((b) => (b.id === record.id ? { ...b, ...record } : b));
-                }
-                return [record, ...prev];
-              });
-            } else {
-              setPendingBarbers((prev) => prev.filter((b) => b.id !== record.id));
-            }
+            setRealtimePendingBarbers((prev) => {
+              const exists = prev.some((b) => b.id === record.id);
+              if (exists) {
+                return prev.map((b) => (b.id === record.id ? { ...b, ...record } : b));
+              }
+              return [record, ...prev];
+            });
           }
 
           const regEvent = parseProfilePayloadRef.current(payload);
           if (regEvent) {
             const entityId = getEntityId(regEvent.id);
-            setActivities((prev) =>
+            setRealtimeActivities((prev) =>
               [regEvent, ...prev.filter((e) => getEntityId(e.id) !== entityId)].slice(0, 8)
             );
           }
@@ -539,7 +493,7 @@ export default function OverviewPanel() {
 
     // 6-second backup polling for 100% reliable live updates
     const syncInterval = setInterval(() => {
-      syncAggregatesBackground();
+      queryClient.invalidateQueries({ queryKey: ["admin"] });
     }, 6000);
 
     return () => {
@@ -548,33 +502,19 @@ export default function OverviewPanel() {
       if (realtimeTimer.current) clearTimeout(realtimeTimer.current);
       supabase.removeChannel(channel);
     };
-  }, [syncAggregatesBackground]);
+  }, [queryClient]);
 
   /* ── Approve / Reject Handlers ───────────────── */
   const handleApprove = async (id: string) => {
     setActionLoading(id);
-    // Optimistic removal
-    setPendingBarbers((prev) => prev.filter((b) => b.id !== id));
-    setMetrics((prev) =>
-      prev
-        ? {
-            ...prev,
-            activeBarbers: prev.activeBarbers + 1,
-            pendingBarbers: Math.max(0, prev.pendingBarbers - 1),
-          }
-        : prev
-    );
     try {
       const res = await approveBarber(id);
-      if (!res.success) {
-        // Rollback on failure — reload fresh data
-        await syncAggregatesBackground();
+      if (res.success) {
+        queryClient.invalidateQueries({ queryKey: ["admin"] });
       }
-      // Background sync all server state
       router.refresh();
     } catch (err) {
       console.error("Approve failed:", err);
-      await syncAggregatesBackground();
     } finally {
       setActionLoading(null);
     }
@@ -582,25 +522,14 @@ export default function OverviewPanel() {
 
   const handleReject = async (id: string) => {
     setActionLoading(id);
-    // Optimistic removal
-    setPendingBarbers((prev) => prev.filter((b) => b.id !== id));
-    setMetrics((prev) =>
-      prev
-        ? {
-            ...prev,
-            pendingBarbers: Math.max(0, prev.pendingBarbers - 1),
-          }
-        : prev
-    );
     try {
       const res = await rejectBarber(id, "reject");
-      if (!res.success) {
-        await syncAggregatesBackground();
+      if (res.success) {
+        queryClient.invalidateQueries({ queryKey: ["admin"] });
       }
       router.refresh();
     } catch (err) {
       console.error("Reject failed:", err);
-      await syncAggregatesBackground();
     } finally {
       setActionLoading(null);
     }

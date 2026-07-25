@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchUsers,
   updateUserStatus,
   type ProfileRow,
 } from "./admin-actions";
+import { UserManagementSkeleton } from "./AdminSkeletons";
 import {
   Search,
   Loader2,
@@ -36,9 +38,7 @@ interface SuspendModalState {
 }
 
 export default function UserManagementPanel({ role }: UserManagementPanelProps) {
-  const [users, setUsers] = useState<ProfileRow[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -50,6 +50,27 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
   const [suspendModal, setSuspendModal] = useState<SuspendModalState | null>(null);
   const [profileModal, setProfileModal] = useState<ProfileRow | null>(null);
   const [failedAvatars, setFailedAvatars] = useState<Set<string>>(new Set());
+
+  const pageSize = 20;
+
+  const {
+    data: queryResult = { data: [], total: 0 },
+    isLoading,
+  } = useQuery({
+    queryKey: ["admin", "users", role, search, page, statusFilter],
+    queryFn: () => fetchUsers(role, search, page, pageSize, statusFilter),
+    staleTime: 1000 * 60 * 5,
+    placeholderData: (previousData) => previousData,
+  });
+
+  const users = queryResult.data;
+  const total = queryResult.total;
+  const totalPages = Math.ceil(total / pageSize);
+
+  // Reset page when search or status filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
 
   const getEffectiveDays = (modal: SuspendModalState): number => {
     if (modal.preset === "custom") {
@@ -80,13 +101,8 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
     setSuspendModal(null);
 
     if (result.success) {
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === user.id
-            ? { ...u, status: "suspended", suspended_until: suspendedUntil }
-            : u
-        )
-      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "metrics"] });
       const formattedDate = untilDate.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
@@ -100,31 +116,6 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
       showToast(result.error || "Failed to suspend user", "error");
     }
   };
-
-  const pageSize = 20;
-  const totalPages = Math.ceil(total / pageSize);
-
-  const loadUsers = useCallback(async () => {
-    try {
-      setLoading(true);
-      const result = await fetchUsers(role, search, page, pageSize, statusFilter);
-      setUsers(result.data);
-      setTotal(result.total);
-    } catch (err) {
-      console.error("Failed to load users:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [role, search, page, statusFilter]);
-
-  useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
-
-  // Reset page when search or status filter changes
-  useEffect(() => {
-    setPage(1);
-  }, [search, statusFilter]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -140,9 +131,8 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
     setActionLoading(null);
 
     if (result.success) {
-      setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, status: newStatus, suspended_until: null } : u))
-      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "metrics"] });
       const actionLabel =
         newStatus === "active"
           ? "reactivated"
@@ -229,11 +219,8 @@ export default function UserManagementPanel({ role }: UserManagementPanelProps) 
       </div>
 
       {/* Loading */}
-      {loading ? (
-        <div className="admin-loading-state">
-          <Loader2 size={32} className="admin-spinner" />
-          <p>Loading {roleLabel.toLowerCase()}…</p>
-        </div>
+      {isLoading ? (
+        <UserManagementSkeleton role={role} />
       ) : users.length === 0 ? (
         <div className="admin-empty-state">
           <Inbox size={48} />

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/supabase-client";
 import { Lock, Mail, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 
@@ -191,7 +192,7 @@ export default function AdminLoginPage() {
         </form>
 
         <div className="admin-login-footer">
-          <a href="/YoBarber">← Back to YoBarber</a>
+          <Link href="/YoBarber">← Back to YoBarber</Link>
         </div>
       </div>
     </div>

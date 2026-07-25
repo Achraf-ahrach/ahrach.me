@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchPendingBarbers,
   approveBarber,
   rejectBarber,
   type ProfileRow,
 } from "./admin-actions";
+import { PendingApprovalsSkeleton } from "./AdminSkeletons";
 import {
   Check,
   X,
@@ -30,8 +32,7 @@ interface ConfirmDialog {
 }
 
 export default function PendingApprovalsPanel() {
-  const [barbers, setBarbers] = useState<ProfileRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     message: string;
@@ -43,22 +44,16 @@ export default function PendingApprovalsPanel() {
   const [profileModal, setProfileModal] = useState<ProfileRow | null>(null);
   const [failedAvatars, setFailedAvatars] = useState<Set<string>>(new Set());
 
-  const loadBarbers = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await fetchPendingBarbers();
-      setBarbers(data);
-    } catch (err) {
-      console.error("Failed to load pending barbers:", err);
-      showToast("Failed to load pending barbers", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadBarbers();
-  }, [loadBarbers]);
+  const {
+    data: barbers = [],
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useQuery({
+    queryKey: ["admin", "pendingBarbers"],
+    queryFn: fetchPendingBarbers,
+    staleTime: 1000 * 60 * 5,
+  });
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -71,7 +66,8 @@ export default function PendingApprovalsPanel() {
     setActionLoading(null);
 
     if (result.success) {
-      setBarbers((prev) => prev.filter((b) => b.id !== barber.id));
+      queryClient.invalidateQueries({ queryKey: ["admin", "pendingBarbers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "metrics"] });
       showToast(`${barber.full_name} has been approved ✅`, "success");
     } else {
       showToast(result.error || "Failed to approve barber", "error");
@@ -87,9 +83,8 @@ export default function PendingApprovalsPanel() {
     setConfirmDialog(null);
 
     if (result.success) {
-      setBarbers((prev) =>
-        prev.filter((b) => b.id !== confirmDialog.barberId)
-      );
+      queryClient.invalidateQueries({ queryKey: ["admin", "pendingBarbers"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "metrics"] });
       const action =
         confirmDialog.mode === "delete" ? "deleted" : "rejected";
       showToast(
@@ -109,13 +104,8 @@ export default function PendingApprovalsPanel() {
     });
   };
 
-  if (loading) {
-    return (
-      <div className="admin-loading-state">
-        <Loader2 size={32} className="admin-spinner" />
-        <p>Loading pending barbers…</p>
-      </div>
-    );
+  if (isLoading) {
+    return <PendingApprovalsSkeleton />;
   }
 
   return (
@@ -129,8 +119,12 @@ export default function PendingApprovalsPanel() {
             review
           </p>
         </div>
-        <button className="admin-refresh-btn" onClick={loadBarbers}>
-          <RefreshCw size={16} />
+        <button
+          className="admin-refresh-btn"
+          onClick={() => refetch()}
+          disabled={isRefetching}
+        >
+          <RefreshCw size={16} className={isRefetching ? "animate-spin" : ""} />
           Refresh
         </button>
       </div>

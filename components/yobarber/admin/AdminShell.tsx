@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/supabase-client";
 import {
   LayoutDashboard,
@@ -24,28 +25,26 @@ interface AdminShellProps {
   adminName: string;
   adminEmail: string;
   adminAvatar?: string;
-  activeTab: AdminTab;
-  onTabChange: (tab: AdminTab) => void;
 }
 
-const NAV_ITEMS: { key: AdminTab; label: string; icon: React.ReactNode }[] = [
+const NAV_ITEMS: { href: string; label: string; icon: React.ReactNode }[] = [
   {
-    key: "overview",
+    href: "/YoBarber/admin",
     label: "Overview",
     icon: <LayoutDashboard size={18} />,
   },
   {
-    key: "pending",
+    href: "/YoBarber/admin/pending",
     label: "Pending Approvals",
     icon: <Clock size={18} />,
   },
   {
-    key: "barbers",
+    href: "/YoBarber/admin/barbers",
     label: "All Barbers",
     icon: <Scissors size={18} />,
   },
   {
-    key: "clients",
+    href: "/YoBarber/admin/clients",
     label: "Clients",
     icon: <Users size={18} />,
   },
@@ -56,12 +55,11 @@ export default function AdminShell({
   adminName,
   adminEmail,
   adminAvatar,
-  activeTab,
-  onTabChange,
 }: AdminShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const saved = localStorage.getItem("yobarber_admin_theme") as "dark" | "light" | null;
@@ -82,6 +80,15 @@ export default function AdminShell({
     router.push("/YoBarber/admin/login");
   };
 
+  const isItemActive = (href: string) => {
+    if (href === "/YoBarber/admin") {
+      return pathname === "/YoBarber/admin" || pathname === "/YoBarber/admin/";
+    }
+    return pathname.startsWith(href);
+  };
+
+  const activeItem = NAV_ITEMS.find((item) => isItemActive(item.href)) || NAV_ITEMS[0];
+
   return (
     <div className={`admin-dashboard ${theme === "light" ? "light-mode" : ""}`}>
       {/* ── Mobile Overlay ── */}
@@ -96,7 +103,7 @@ export default function AdminShell({
       <aside className={`admin-sidebar ${sidebarOpen ? "open" : ""}`}>
         {/* Logo */}
         <div className="admin-sidebar-header">
-          <div className="admin-logo-group">
+          <Link href="/YoBarber/admin" className="admin-logo-group" onClick={() => setSidebarOpen(false)}>
             <Image
               src="/yobarber/logo.png"
               alt="YoBarber"
@@ -109,7 +116,7 @@ export default function AdminShell({
               <span className="admin-logo-text">YoBarber</span>
               <span className="admin-logo-badge">Admin</span>
             </div>
-          </div>
+          </Link>
           <button
             className="admin-sidebar-close"
             onClick={() => setSidebarOpen(false)}
@@ -120,21 +127,20 @@ export default function AdminShell({
 
         {/* Nav */}
         <nav className="admin-nav">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.key}
-              className={`admin-nav-item ${
-                activeTab === item.key ? "active" : ""
-              }`}
-              onClick={() => {
-                onTabChange(item.key);
-                setSidebarOpen(false);
-              }}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const active = isItemActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`admin-nav-item ${active ? "active" : ""}`}
+                onClick={() => setSidebarOpen(false)}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Admin Profile (bottom) */}
@@ -175,7 +181,7 @@ export default function AdminShell({
             <Menu size={22} />
           </button>
           <h1 className="admin-page-title">
-            {NAV_ITEMS.find((i) => i.key === activeTab)?.label}
+            {activeItem.label}
           </h1>
           <div className="admin-header-right">
             <button

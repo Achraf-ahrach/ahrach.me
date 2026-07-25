@@ -1,6 +1,9 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/supabase-server";
 import { ShieldAlert } from "lucide-react";
+import AdminShell from "@/components/yobarber/admin/AdminShell";
+import AdminQueryProvider from "@/components/yobarber/admin/AdminQueryProvider";
 
 export default async function DashboardLayout({
   children,
@@ -48,22 +51,27 @@ export default async function DashboardLayout({
             <br />
             This area is restricted to authorized administrators only.
           </p>
-          <a href="/YoBarber" className="admin-access-denied-link">
+          <Link href="/YoBarber" className="admin-access-denied-link">
             ← Back to YoBarber
-          </a>
+          </Link>
         </div>
       </div>
     );
   }
 
-  /* ── 3. Render admin dashboard ─── */
+  const adminName = profile.full_name || user.user_metadata?.full_name || "Admin";
+  const adminEmail = user.email || "";
+
+  /* ── 3. Render persistent admin dashboard layout ─── */
   return (
-    <div
-      data-admin-name={profile.full_name || user.user_metadata?.full_name || "Admin"}
-      data-admin-email={user.email || ""}
-      data-admin-avatar={userAvatar}
-    >
-      {children}
-    </div>
+    <AdminQueryProvider>
+      <AdminShell
+        adminName={adminName}
+        adminEmail={adminEmail}
+        adminAvatar={userAvatar}
+      >
+        {children}
+      </AdminShell>
+    </AdminQueryProvider>
   );
 }
