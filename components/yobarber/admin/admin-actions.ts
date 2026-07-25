@@ -487,7 +487,7 @@ export async function fetchRecentActivities(): Promise<ActivityEvent[]> {
   const { data: recentAppts } = await supabase
     .from("appointments")
     .select(
-      "id, status, created_at, updated_at, guest_name, client:profiles!client_id(full_name), barber:profiles!barber_id(full_name)"
+      "id, status, created_at, updated_at, guest_name, client_id, barber_id, client:profiles!client_id(full_name), barber:profiles!barber_id(full_name)"
     )
     .in("status", ["pending", "approved", "completed", "cancelled", "no_show"])
     .order("updated_at", { ascending: false })
@@ -495,16 +495,19 @@ export async function fetchRecentActivities(): Promise<ActivityEvent[]> {
 
   if (recentAppts) {
     for (const appt of recentAppts) {
-      const clientName =
-        (appt.client as any)?.full_name || appt.guest_name || "A client";
-      const barberName = (appt.barber as any)?.full_name || "a barber";
+      const isGuest = !appt.client_id || Boolean(appt.guest_name);
+      const guestName = appt.guest_name || "Guest";
+      const clientName = (appt.client as any)?.full_name || appt.guest_name || "A client";
+      const barberName = (appt.barber as any)?.full_name || "A barber";
 
       if (appt.status === "completed") {
         events.push({
           id: `appt-comp-${appt.id}`,
           type: "completion",
           title: "Appointment Completed",
-          description: `${clientName} with ${barberName}`,
+          description: isGuest
+            ? `${barberName} completed guest '${guestName}'`
+            : `${clientName} with ${barberName}`,
           timestamp: appt.updated_at,
         });
       } else if (appt.status === "cancelled") {
@@ -512,7 +515,9 @@ export async function fetchRecentActivities(): Promise<ActivityEvent[]> {
           id: `appt-cancel-${appt.id}`,
           type: "cancellation",
           title: "Appointment Cancelled",
-          description: `${clientName} cancelled with ${barberName}`,
+          description: isGuest
+            ? `Guest '${guestName}' cancelled with ${barberName}`
+            : `${clientName} cancelled with ${barberName}`,
           timestamp: appt.updated_at,
         });
       } else if (appt.status === "no_show") {
@@ -520,17 +525,29 @@ export async function fetchRecentActivities(): Promise<ActivityEvent[]> {
           id: `appt-noshow-${appt.id}`,
           type: "cancellation",
           title: "Client No-Show",
-          description: `${clientName} didn't show up for ${barberName}`,
+          description: isGuest
+            ? `Guest '${guestName}' didn't show up for ${barberName}`
+            : `${clientName} didn't show up for ${barberName}`,
           timestamp: appt.updated_at,
         });
       } else if (appt.status === "pending" || appt.status === "approved") {
-        events.push({
-          id: `appt-book-${appt.id}`,
-          type: "booking",
-          title: "New Queue Booking",
-          description: `${clientName} booked with ${barberName}`,
-          timestamp: appt.created_at,
-        });
+        if (isGuest) {
+          events.push({
+            id: `appt-book-${appt.id}`,
+            type: "booking",
+            title: "Guest Added to Queue",
+            description: `${barberName} added guest '${guestName}'`,
+            timestamp: appt.created_at,
+          });
+        } else {
+          events.push({
+            id: `appt-book-${appt.id}`,
+            type: "booking",
+            title: "New Queue Booking",
+            description: `${clientName} booked with ${barberName}`,
+            timestamp: appt.created_at,
+          });
+        }
       }
     }
   }

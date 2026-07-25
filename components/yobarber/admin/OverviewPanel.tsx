@@ -167,6 +167,17 @@ const ACTIVITY_CONFIG: Record<
   },
 };
 
+/* ── Entity ID Extractor for Activity Deduplication ────── */
+function getEntityId(eventId: string): string {
+  if (eventId.startsWith("appt-comp-")) return eventId.slice("appt-comp-".length);
+  if (eventId.startsWith("appt-cancel-")) return eventId.slice("appt-cancel-".length);
+  if (eventId.startsWith("appt-noshow-")) return eventId.slice("appt-noshow-".length);
+  if (eventId.startsWith("appt-book-")) return eventId.slice("appt-book-".length);
+  if (eventId.startsWith("reg-")) return eventId.slice("reg-".length);
+  if (eventId.startsWith("client-reg-")) return eventId.slice("client-reg-".length);
+  return eventId;
+}
+
 /* ═══════════════════════════════════════════════
    OVERVIEW PANEL COMPONENT
    ═══════════════════════════════════════════════ */
@@ -296,75 +307,135 @@ export default function OverviewPanel() {
   const parseAppointmentPayload = useCallback((payload: any): ActivityEvent | null => {
     const record = payload.new || payload.old;
     if (!record) return null;
-    const { id, status, updated_at, created_at, guest_name } = record;
-    const clientName = guest_name || "A client";
+    const { id, status, updated_at, created_at, client_id, guest_name, client_name, barber_name } = record;
+    
+    // Check for Guest Status: client_id is null OR guest_name is present
+    const isGuest = !client_id || Boolean(guest_name);
+    const guestName = guest_name || "Guest";
+    const clientName = guest_name || client_name || "A client";
+    const barberName = barber_name || "A barber";
     const ts = updated_at || created_at || new Date().toISOString();
 
+    let eventItem: ActivityEvent | null = null;
+
     if (status === "completed") {
-      return {
-        id: `realtime-comp-${id}-${Date.now()}`,
+      eventItem = {
+        id: `appt-comp-${id}`,
         type: "completion",
         title: "Appointment Completed",
-        description: `${clientName}'s appointment completed`,
+        description: isGuest
+          ? `${barberName} completed guest '${guestName}'`
+          : `${clientName} with ${barberName}`,
         timestamp: ts,
       };
     } else if (status === "cancelled") {
-      return {
-        id: `realtime-cancel-${id}-${Date.now()}`,
+      eventItem = {
+        id: `appt-cancel-${id}`,
         type: "cancellation",
         title: "Appointment Cancelled",
-        description: `${clientName} cancelled appointment`,
+        description: isGuest
+          ? `Guest '${guestName}' cancelled with ${barberName}`
+          : `${clientName} cancelled with ${barberName}`,
         timestamp: ts,
       };
     } else if (status === "no_show") {
-      return {
-        id: `realtime-noshow-${id}-${Date.now()}`,
+      eventItem = {
+        id: `appt-noshow-${id}`,
         type: "cancellation",
         title: "Client No-Show",
-        description: `${clientName} didn't show up`,
+        description: isGuest
+          ? `Guest '${guestName}' didn't show up for ${barberName}`
+          : `${clientName} didn't show up for ${barberName}`,
         timestamp: ts,
       };
     } else if (status === "pending" || status === "approved") {
-      return {
-        id: `realtime-book-${id}-${Date.now()}`,
-        type: "booking",
-        title: "New Queue Booking",
-        description: `${clientName} booked an appointment`,
-        timestamp: ts,
-      };
+      if (isGuest) {
+        eventItem = {
+          id: `appt-book-${id}`,
+          type: "booking",
+          title: "Guest Added to Queue",
+          description: `${barberName} added guest '${guestName}'`,
+          timestamp: ts,
+        };
+      } else {
+        eventItem = {
+          id: `appt-book-${id}`,
+          type: "booking",
+          title: "New Queue Booking",
+          description: `${clientName} booked with ${barberName}`,
+          timestamp: ts,
+        };
+      }
     }
-    return null;
+
+    if (eventItem) {
+      console.log("🔔 [Realtime Feed Event Created]:", eventItem);
+    }
+    return eventItem;
   }, []);
 
   const parseProfilePayload = useCallback((payload: any): ActivityEvent | null => {
     const record = payload.new;
+    // Only trigger registration event for newly created accounts (INSERT)
     if (!record || payload.eventType !== "INSERT") return null;
     const { id, full_name, role, created_at } = record;
     const name = full_name || (role === "barber" ? "A barber" : "A client");
     const ts = created_at || new Date().toISOString();
 
-    return {
-      id: `realtime-reg-${id}-${Date.now()}`,
+    const isBarber = role === "barber";
+    const eventItem: ActivityEvent = {
+      id: isBarber ? `reg-${id}` : `client-reg-${id}`,
       type: "registration",
-      title: role === "barber" ? "New Barber Registered" : "New Client Joined",
-      description: `${name} joined the platform`,
+      title: isBarber ? "New Barber Registered" : "New Client Joined",
+      description: isBarber ? `${name} joined the platform` : `${name} signed up`,
       timestamp: ts,
     };
+
+    console.log("🔔 [Realtime Feed Event Created]:", eventItem);
+    return eventItem;
   }, []);
 
   /* ── Background Sync for Aggregate Widgets (KPIs, Chart, Top Barbers) ─ */
   const syncAggregatesBackground = useCallback(async () => {
     try {
-      const [m, trendRes, tb] = await Promise.all([
+      const [m, trendRes, tb, freshActivities] = await Promise.all([
         fetchDashboardMetrics(),
         fetchAppointmentsTrend(timeRangeRef.current),
         fetchTopBarbers(),
+        fetchRecentActivities(),
       ]);
       setMetrics(m);
       setTrend(trendRes.points);
       setTotalPeriodAppointments(trendRes.totalCount);
       setCompletedPeriodAppointments(trendRes.completedCount);
       setTopBarbers(tb);
+
+      setActivities((prev) => {
+        const merged: ActivityEvent[] = [];
+        const seenEntityIds = new Set<string>();
+
+        // 1. Fresh server activities with full joined relations take precedence
+        for (const item of freshActivities) {
+          merged.push(item);
+          seenEntityIds.add(getEntityId(item.id));
+        }
+
+        // 2. Retain any un-synced realtime items for entities not present in server response
+        for (const item of prev) {
+          const entityId = getEntityId(item.id);
+          if (!seenEntityIds.has(entityId)) {
+            merged.push(item);
+            seenEntityIds.add(entityId);
+          }
+        }
+
+        // 3. Sort by timestamp DESC
+        merged.sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+
+        return merged.slice(0, 8);
+      });
     } catch (err) {
       console.error("Background aggregate sync failed:", err);
     }
@@ -383,9 +454,27 @@ export default function OverviewPanel() {
     loadAll();
   }, [loadAll]);
 
-  /* ── Single Centralized Supabase Realtime Subscription ─ */
+  // Keep stable refs for realtime handlers to prevent subscription teardown on re-renders
+  const parseAppointmentPayloadRef = useRef(parseAppointmentPayload);
+  useEffect(() => {
+    parseAppointmentPayloadRef.current = parseAppointmentPayload;
+  }, [parseAppointmentPayload]);
+
+  const parseProfilePayloadRef = useRef(parseProfilePayload);
+  useEffect(() => {
+    parseProfilePayloadRef.current = parseProfilePayload;
+  }, [parseProfilePayload]);
+
+  const handleRealtimeEventRef = useRef(handleRealtimeEvent);
+  useEffect(() => {
+    handleRealtimeEventRef.current = handleRealtimeEvent;
+  }, [handleRealtimeEvent]);
+
+  /* ── Single Centralized Supabase Realtime Subscription + Auto Sync Backup ─ */
   useEffect(() => {
     const supabase = createBrowserClient();
+
+    console.log("📡 [OverviewPanel] Subscribing to Supabase Realtime Channel...");
 
     const channel = supabase
       .channel("admin-overview-realtime")
@@ -398,15 +487,14 @@ export default function OverviewPanel() {
         },
         (payload) => {
           console.log("⚡ Realtime appointment event:", payload);
-          // 1. Instant Active Update: Live Activity Feed
-          const eventItem = parseAppointmentPayload(payload);
+          const eventItem = parseAppointmentPayloadRef.current(payload);
           if (eventItem) {
+            const entityId = getEntityId(eventItem.id);
             setActivities((prev) =>
-              [eventItem, ...prev.filter((e) => e.id !== eventItem.id)].slice(0, 8)
+              [eventItem, ...prev.filter((e) => getEntityId(e.id) !== entityId)].slice(0, 8)
             );
           }
-          // 2. Debounced Background Sync for Aggregates (KPI Cards, Chart, Top Barbers)
-          handleRealtimeEvent();
+          handleRealtimeEventRef.current();
         }
       )
       .on(
@@ -418,7 +506,6 @@ export default function OverviewPanel() {
         },
         (payload) => {
           console.log("⚡ Realtime profile event:", payload);
-          // 1. Instant Active Update: Pending Approvals & Activity Feed
           const record = payload.new as ProfileRow | undefined;
           if (record && record.role === "barber") {
             if (record.status === "pending") {
@@ -434,15 +521,15 @@ export default function OverviewPanel() {
             }
           }
 
-          const regEvent = parseProfilePayload(payload);
+          const regEvent = parseProfilePayloadRef.current(payload);
           if (regEvent) {
+            const entityId = getEntityId(regEvent.id);
             setActivities((prev) =>
-              [regEvent, ...prev.filter((e) => e.id !== regEvent.id)].slice(0, 8)
+              [regEvent, ...prev.filter((e) => getEntityId(e.id) !== entityId)].slice(0, 8)
             );
           }
 
-          // 2. Debounced Background Sync for Aggregates (KPI Cards, Chart, Top Barbers)
-          handleRealtimeEvent();
+          handleRealtimeEventRef.current();
         }
       )
       .subscribe((status, err) => {
@@ -450,11 +537,18 @@ export default function OverviewPanel() {
         if (err) console.error("❌ Realtime Subscription Error:", err);
       });
 
+    // 6-second backup polling for 100% reliable live updates
+    const syncInterval = setInterval(() => {
+      syncAggregatesBackground();
+    }, 6000);
+
     return () => {
+      console.log("🔌 [OverviewPanel] Unsubscribing from Realtime Channel...");
+      clearInterval(syncInterval);
       if (realtimeTimer.current) clearTimeout(realtimeTimer.current);
       supabase.removeChannel(channel);
     };
-  }, [handleRealtimeEvent, parseAppointmentPayload, parseProfilePayload]);
+  }, [syncAggregatesBackground]);
 
   /* ── Approve / Reject Handlers ───────────────── */
   const handleApprove = async (id: string) => {
