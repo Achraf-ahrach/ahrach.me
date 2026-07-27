@@ -4,14 +4,14 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
-        source: "/admin",
-        destination: "/YoBarber/admin",
-        permanent: false,
+        source: "/YoBarber",
+        destination: "https://yobarber.app",
+        permanent: true,
       },
       {
-        source: "/admin/:path*",
-        destination: "/YoBarber/admin/:path*",
-        permanent: false,
+        source: "/YoBarber/:path*",
+        destination: "https://yobarber.app/:path*",
+        permanent: true,
       },
     ];
   },

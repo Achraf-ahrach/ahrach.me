@@ -23,6 +23,7 @@ const NAV_ITEMS = [
 
 /* ── Portfolio projects ───────────────────────── */
 const PROJECTS = [
+  { img: "YoBarber.png", title: "YoBarber", desc: "Live Barber Queue & Barbershop Booking Platform (iOS, Android & Web)", url: "https://yobarber.app" },
   { img: "CleMoPi.png", title: "CleMoPi", desc: "Smart agriculture monitoring platform", url: "https://clemopi.vercel.app/" },
   { img: "VibeLink.png", title: "VibeLink", desc: "A real-time dating app like Tinder", url: "https://github.com/hamzazaouya/VibeLink" },
   { img: "LIMS.webp", title: "LIMS", desc: "Laboratory Information Management System", url: null },
@@ -432,7 +433,7 @@ export default function PortfolioPage() {
               </div>
             </div>
             <div className="row">
-              {PROJECTS.map((project) => (
+              {PROJECTS.map((project, index) => (
                 <div className="portfolio-item padd-15" key={project.title}>
                   <div className="portfolio-item-inner shadow-dark">
                     <div className="portfolio-img">
@@ -444,6 +445,7 @@ export default function PortfolioPage() {
                             width={400}
                             height={300}
                             style={{ width: "100%", height: "auto", display: "block" }}
+                            priority={index < 2}
                           />
                           <div className="portfolio-info">
                             <h4>{project.title}</h4>
@@ -464,6 +466,7 @@ export default function PortfolioPage() {
                             width={400}
                             height={300}
                             style={{ width: "100%", height: "auto", display: "block" }}
+                            priority={index < 2}
                           />
                           <div className="portfolio-info">
                             <h4>{project.title}</h4>

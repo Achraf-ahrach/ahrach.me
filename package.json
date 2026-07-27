@@ -1,32 +1,14 @@
 {
   "name": "ahrach.me",
   "version": "1.0.0",
-  "main": "index.js",
-  "directories": {
-    "doc": "doc"
-  },
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint ."
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Achraf-ahrach/ahrach.me.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Achraf-ahrach/ahrach.me/issues"
-  },
-  "homepage": "https://github.com/Achraf-ahrach/ahrach.me#readme",
-  "description": "",
   "dependencies": {
-    "@supabase/ssr": "^0.12.3",
-    "@supabase/supabase-js": "^2.110.8",
-    "@tanstack/react-query": "^5.101.4",
     "lucide-react": "^1.25.0",
     "next": "^16.2.11",
     "react": "^19.2.8",

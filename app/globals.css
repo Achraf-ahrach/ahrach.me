@@ -963,6 +963,8 @@ h3.my-profession {
   }
   .aside {
     left: -270px;
+    z-index: 100;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.2);
   }
   .aside.open {
     left: 0;
@@ -972,13 +974,13 @@ h3.my-profession {
     left: 30px;
   }
   .aside .nav-toggler.open {
-    left: 300px;
+    left: 280px;
   }
   .section {
     left: 0;
   }
   .section.open {
-    left: 270px;
+    left: 0;
   }
   .about .about-content .personal-info .info-item p span {
     display: block;
@@ -997,9 +999,44 @@ h3.my-profession {
   .home .home-info {
     flex: 0 0 100%;
     max-width: 100%;
+    margin-bottom: 30px;
+    padding-top: 50px;
+  }
+  .home .home-info h3.hello {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+  .home .home-info h3.my-profession {
+    font-size: 22px;
   }
   .home .home-img {
-    display: none;
+    flex: 0 0 100%;
+    max-width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    margin-top: 10px;
+    margin-bottom: 50px;
+  }
+  .home .home-img img {
+    height: 320px !important;
+    width: 250px !important;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+  .home .home-img::before {
+    left: calc(50% - 140px);
+    top: -15px;
+    width: 60px;
+    height: 60px;
+  }
+  .home .home-img::after {
+    right: calc(50% - 140px);
+    bottom: -15px;
+    width: 60px;
+    height: 60px;
   }
   .service .service-item,
   .portfolio-section .portfolio-item,
